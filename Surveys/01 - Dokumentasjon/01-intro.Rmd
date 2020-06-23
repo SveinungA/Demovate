@@ -1,0 +1,386 @@
+
+
+```{r start matter, echo = FALSE, warning = FALSE, message= FALSE}
+library(tidyverse)
+library(kableExtra)
+library(haven)
+library(janitor)
+library(data.table)
+
+# GGplot:
+theme_set(theme_bw())
+
+# Data:
+setwd("D:/200 NORCE/Demovate/Survey/01 - Dokumentasjon")
+d <- read_sav("responsanalyse.SAV")
+
+# Factorize:
+variables_with_labels = map(d, function(x) attr(x, "class") == "haven_labelled") %>% unlist() %>%  names()
+d_factored = d %>% mutate_at( vars(variables_with_labels), as_factor)
+rm(variables_with_labels)
+
+# Data wrangling:
+d_factored <- d_factored %>%
+  mutate(
+         # Characters:
+         Bydel = as.character(Bydel),
+         bydel_8 = as.character(bydel_8),
+         R1DEMOVATE21 = as.character(R1DEMOVATE21),
+         aldrkat = as.character(aldrkat),
+         R1DEMOVATE16 = as.character(R1DEMOVATE16),
+         R1DEMOVATE18 = as.character(R1DEMOVATE18),
+         R1DEMOVATE19 = as.character(R1DEMOVATE19),
+         R1DEMOVATE15 = as.character(R1DEMOVATE15),
+         
+         # Numerics:
+         R1DEMOVATE7_1 = as.numeric(R1DEMOVATE7_1),
+         R1DEMOVATE7_2 = as.numeric(R1DEMOVATE7_2),
+         R1DEMOVATE7_3 = as.numeric(R1DEMOVATE7_3),
+         
+         # Attempt:
+         R1DEMOVATE18 = str_replace(R1DEMOVATE18, "Universitet og høyskole 2 år eller mer", "Høyere utdanning, > 2 år"),
+         R1DEMOVATE18 = str_replace(R1DEMOVATE18, "Universitet og høyskole, mindre enn 2 år", "Høyere utdanning, < 2 år"),
+         
+         R1DEMOVATE1 =  str_remove(R1DEMOVATE1, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE1 =  str_remove(R1DEMOVATE1, " - Jeg motsetter meg det fullstendig"),
+
+         R1DEMOVATE2 =  str_remove(R1DEMOVATE2, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE2 =  str_remove(R1DEMOVATE2, " - Jeg motsetter meg det fullstendig"),
+
+         R1DEMOVATE3 =  str_remove(R1DEMOVATE3, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE3 =  str_remove(R1DEMOVATE3, " - Jeg motsetter meg det fullstendig"),
+
+         R1DEMOVATE4 =  str_remove(R1DEMOVATE4, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE4 =  str_remove(R1DEMOVATE4, " - Jeg motsetter meg det fullstendig"),
+
+         R1DEMOVATE5 = str_remove(R1DEMOVATE5, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE5 = str_remove(R1DEMOVATE5, " - Jeg motsetter meg det fullstendig"),
+         
+         R1DEMOVATE8 = str_remove(R1DEMOVATE8, " - Full tillit"),
+         R1DEMOVATE8 = str_remove(R1DEMOVATE8, " - Ingen tillit i det hele tatt"),
+         
+         R1DEMOVATE9 = str_remove(R1DEMOVATE9, " - Full tillit"),
+         R1DEMOVATE9 = str_remove(R1DEMOVATE9, " - Ingen tillit i det hele tatt"),
+         
+         R1DEMOVATE10 = str_remove(R1DEMOVATE10, " - Fullt og helt"),
+         R1DEMOVATE10 = str_remove(R1DEMOVATE10, " - Ikke i det hele tatt"),
+         
+         R1DEMOVATE11 = str_remove(R1DEMOVATE11, " - Passer fullt og helt"),
+         R1DEMOVATE11 = str_remove(R1DEMOVATE11, " - Passer ikke i det hele tatt"),
+         
+         R1DEMOVATE12 = str_remove(R1DEMOVATE12, " - Venstre"),
+         R1DEMOVATE12 = str_remove(R1DEMOVATE12, " - Høyre")
+
+         )
+
+#R1DEMOVATE10$R1DEMOVATE10 <- str_remove(R1DEMOVATE10$R1DEMOVATE10, " - Fullt og helt")
+#R1DEMOVATE10$R1DEMOVATE10 <- str_remove(R1DEMOVATE10$R1DEMOVATE10, " - Ikke i det hele tatt")
+
+#R1DEMOVATE8$R1DEMOVATE8 <- str_remove(R1DEMOVATE8$R1DEMOVATE8, " - Full tillit")
+#R1DEMOVATE8$R1DEMOVATE8 <- str_remove(R1DEMOVATE8$R1DEMOVATE8, " - Ingen tillit i det hele tatt")
+
+#R1DEMOVATE11$R1DEMOVATE11 <- str_remove(R1DEMOVATE11$R1DEMOVATE11, " - Passer fullt og helt")
+#R1DEMOVATE11$R1DEMOVATE11 <- str_remove(R1DEMOVATE11$R1DEMOVATE11, " - Passer ikke i det hele tatt")
+
+
+# --------------- Edit R1DEMOVATE13:
+d_factored[d_factored$o_R1DEMOVATE13 == "BOMPENGE","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "BOMPENGEPARTIET","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "folkje askjon mot bompenger","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "De kristine'","R1DEMOVATE13"] <- "Partiet De Kristne"
+
+# --------------- Create Background Questions data frame:
+Variabel <- c("ID", "Bydel", "Bydel_8", "Alder", "Alder (kategorisk)", "Fødselsår", "Postnummer", "Mann/Kvinne", "Jobbstatus", "Utdanning", "Bruttoinntekt", "Opplevd sosial klasse")
+Variabelnavn <- c("IntervjuID", "bydel", "bydel_8", "alder", "aldrkat", "R1DEMOVATE22", "R1DEMOVATE24", "R1DEMOVATE21", "R1DEMOVATE16", "R1DEMOVATE18", "R1DEMOVATE19", "R1DEMOVATE15")
+Bakgrunn <- data.frame(Variabel, Variabelnavn)
+rm(Variabel, Variabelnavn)
+
+# --------------- Create Count for each relevant variable
+Bydel          <- d_factored %>%   group_by(Bydel)          %>%   count(Bydel)        %>%  adorn_totals("row") # 4 Bydeler
+bydel_8        <- d_factored %>%   group_by(bydel_8)        %>%   count(bydel_8)      %>%  adorn_totals("row") # 8 Bydeler
+R1DEMOVATE24   <- d_factored %>%   group_by(R1DEMOVATE24)   %>%   count(R1DEMOVATE24) %>%  adorn_totals("row") # Postnummer
+R1DEMOVATE22   <- d_factored %>%   group_by(R1DEMOVATE22)   %>%   count(R1DEMOVATE22) %>%  adorn_totals("row") # Fødselsår
+alder          <- d_factored %>%   group_by(alder)          %>%   count(alder)        %>%  adorn_totals("row") # Oppgitt alder
+aldrkat        <- d_factored %>%   group_by(aldrkat)        %>%   count(aldrkat)      %>%  adorn_totals("row") # Aldersgategorier
+R1DEMOVATE21   <- d_factored %>%   group_by(R1DEMOVATE21)   %>%   count(R1DEMOVATE21) %>%  adorn_totals("row") # Kjønn
+R1DEMOVATE16   <- d_factored %>%   group_by(R1DEMOVATE16)   %>%   count(R1DEMOVATE16) %>%  adorn_totals("row") # Yrkesstatus
+# Here should R1DEMOVATE18 (education) normally be placed, but is placed further down because of further wrangling
+R1DEMOVATE19   <- d_factored %>%   group_by(R1DEMOVATE19)   %>%   count(R1DEMOVATE19) %>%  adorn_totals("row") # Inntekt
+R1DEMOVATE15_1 <- d_factored %>%   group_by(R1DEMOVATE15)   %>%   count(R1DEMOVATE15)                          # Social class - for ggplot
+R1DEMOVATE15   <- d_factored %>%   group_by(R1DEMOVATE15)   %>%   count(R1DEMOVATE15) %>%  adorn_totals("row") # Social class - for table
+
+
+
+# -------------- Create count and wrangle education-variable:
+R1DEMOVATE18 <- d_factored %>%   group_by(R1DEMOVATE18) %>%   count(R1DEMOVATE18) %>%  ungroup() %>%  
+  mutate(Survey = (n / 900),
+         SSB = c((50590/223785), (33076/223785), (64090/223785), (76029/223785))) %>%
+  select(-n) %>%
+  reshape2::melt(id.vars = "R1DEMOVATE18") %>%
+  mutate(my.order = c(4,1,2,3,4,1,2,3))
+
+```
+
+# Bakgrunn
+
+Her er en oversikt over svarfordeling på de ulike bakgrunnsspørsmålene.
+
+```{r bakgrunnsinfo, echo = FALSE, warning = FALSE, message = FALSE}
+Bakgrunn %>%
+  kable() %>%
+  kable_styling()
+
+rm(Bakgrunn)
+```
+
+## Bydel
+*Bydel* og *bydel_8*
+
+Det er to bydelsvariabler i datasettet, ut fra om man deler opp i x eller y bydeler. Hentet fra telefonregisteret.
+
+### Bydel
+
+```{r bydel, echo = FALSE, warning = FALSE, message = FALSE}
+Bydel %>% filter(Bydel != "Total") %>%
+  ggplot(aes(x = fct_reorder(Bydel, desc(n)), y = n, fill = Bydel)) +
+  geom_col() +
+  labs(x = "Bydel", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på bydeler") + 
+  theme(legend.position = "none")
+
+Bydel %>%
+  kable(caption = "Bydel", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(Bydel)
+```
+
+### bydel_8
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+bydel_8 %>% filter(bydel_8 != "Total") %>%
+  ggplot(aes(x = fct_reorder(bydel_8, n), y = n, fill = bydel_8)) +
+  geom_col() +
+  labs(x = "Bydel", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på bydeler") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+bydel_8 %>%
+  kable(caption = "Bydel_8", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(bydel_8)
+```
+
+
+## Postnummer
+*R1DEMOVATE24*
+
+> Hva er postnummeret der du bor?   
+
+```{r postnummer, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE24 %>%
+  kable(caption = "Postnummer", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE24)
+```
+
+
+## Alder
+*R1DEMOVATE22*, *alder* og *aldrkat*
+
+Det er *tre* aldersvariabler i datasettet. **R1DEMOVATE22** for fødselsår, **alder** for alder og **aldrkat** for alderskategorier.
+
+De to førstnevnte er i praksis like men speilvendt siden alder er dagens dato minus fødselsår. Fødselsår er et spørsmål i spørreundersøkelsen (R1DEMOVATE22), mens "alder" er, slik NORCE forstår det, hentet fra Respons Analyses register. Siden fødselsår er selvrapportert i samtalen antas dette å være mest troverdig dersom det skulle være avvik.
+
+### R1DEMOVATE22
+> Hvilket år er du født?   
+
+```{r fødselsår, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE22 %>% filter(R1DEMOVATE22 != "Total") %>%
+  ggplot(aes(x = R1DEMOVATE22, y = n, group = 1)) +
+  geom_smooth(method = "loess", alpha = 0.4, color = "#AFAFAF", lty = 2) +
+  geom_line(color="gray40") +
+  geom_point(shape=21, color="black", fill="#69b3a2", size=4) +
+  labs(x = "Fødselsår", y = "Antall", title = "Antall respondenter, fordelt på fødselsår") +
+  theme(legend.position = "none") +
+  scale_x_discrete(breaks=c(1935, 1940, 1945, 1950, 1955, 1960, 1965, 1970, 1975, 1980, 1985, 1990, 1995, 2000))
+
+R1DEMOVATE22 %>%
+  kable(caption = "Fødselsår", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE22)
+```
+
+### alder
+
+```{r oppgitt alder, echo = FALSE, warning = FALSE, message = FALSE}
+alder %>% filter(alder != "Total") %>%
+  ggplot(aes(x = alder, y = n, group = 1)) +
+  geom_smooth(method = "loess", alpha = 0.4, color = "#AFAFAF", lty = 2) +
+  geom_line(color="gray40") +
+  geom_point(shape=21, color="black", fill="#69b3a2", size=4) +
+  labs(x = "Alder", y = "Antall", title = "Antall respondenter, fordelt på alder") +
+  theme(legend.position = "none") +
+  scale_x_discrete(breaks=c(20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85))
+
+alder %>%
+  kable(caption = "Alder", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(alder)
+```
+
+### Aldrkat
+
+```{r alderskategorier, echo = FALSE, warning = FALSE, message = FALSE}
+my.order <- c(2,3,4,1)
+
+aldrkat %>% filter(aldrkat != "Total") %>%
+  ggplot(aes(x = reorder(aldrkat, my.order), y = n, fill = aldrkat)) +
+  geom_col() +
+  labs(x = "Alder", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på aldersgrupper") + 
+  theme(legend.position = "none")
+
+aldrkat %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(aldrkat)
+```
+
+
+## Mann / Kvinne
+*R1DEMOVATE21*
+
+> Kjønn:   
+
+```{r kjønn, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE21 %>% filter(R1DEMOVATE21 != "Total") %>%
+  ggplot(aes(x = R1DEMOVATE21, y = n, fill = R1DEMOVATE21)) +
+  geom_col() +
+  labs(x = "Kjønn", y = "Antall", title = "Antall respondenter, fordelt på Kjønn") + 
+  theme(legend.position = "none")
+
+R1DEMOVATE21 %>%
+  kable(caption = "Kjønn", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE21)
+```
+
+## Yrkesstatus
+*R1DEMOVATE16*
+
+> Er du..?
+
+```{r Yrkesstatus, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE16 %>% filter(R1DEMOVATE16 != "Total") %>%
+  ggplot(aes(x = fct_reorder(R1DEMOVATE16, n), y = n, fill = R1DEMOVATE16)) +
+  geom_col() +
+  labs(x = "Yrkesstatus", y = "Antall", title = "Respondentenes yrkesstatus") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+R1DEMOVATE16 %>% 
+  kable(caption = "Yrkesstatus", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE16)
+```
+
+## Utdanning
+*R1DEMOVATE18*
+
+> Hva er din høyeste fullførte utdanning?
+
+```{r Utdanningsnivå, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE18 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE18, my.order), y = value, fill = variable)) +
+  geom_col(position = "dodge") +
+  labs(x = "Utdanningsnivå", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på utdanningsnivå sammenliknet med statistikk fra SSB (i prosent)", fill = "Variabel") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  coord_flip()
+
+rm(R1DEMOVATE18, my.order)
+
+d_factored %>% 
+  group_by(R1DEMOVATE18)   %>% 
+  count(R1DEMOVATE18) %>%
+  adorn_totals("row") %>%
+  kable(col.names = c("Verdi", "Antall"), caption = "Utdanningsnivå") %>%
+  kable_styling(full_width = FALSE, position = "center") 
+
+```
+
+## Bruttointekt
+*R1DEMOVATE19*
+
+> Hva er din brutto årsinntekt for tiden?
+
+```{r Bruttoinntekt, echo = FALSE, warning = FALSE, message = FALSE}
+# Need to change order:
+R1DEMOVATE19$Order <- NA 
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "Inntil 150 000",          "Order"] <- 1
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "150 001 - 300 000",       "Order"] <- 2
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "300 001 - 400 000",       "Order"] <- 3
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "400 001 - 500 000",       "Order"] <- 4
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "500 001 - 600 000",       "Order"] <- 5
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "600 001 - 700 000",       "Order"] <- 6
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "700 001 - 1 million",     "Order"] <- 7
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "Mer enn 1 million",       "Order"] <- 8
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "Ikke sikker/Ubesvart",    "Order"] <- 9
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "Total",                   "Order"] <- 10
+
+R1DEMOVATE19 %>% filter(R1DEMOVATE19 != "Total") %>%
+  ungroup() %>%
+  ggplot(aes(x = reorder(R1DEMOVATE19, desc(Order)), y = n, fill = R1DEMOVATE19)) +
+  geom_col() +
+  labs(x = "Inntektsnivå", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på inntektsnivå") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+R1DEMOVATE19$Order <- NULL
+
+R1DEMOVATE19 %>% 
+  kable(caption = "Bruttoinntekt", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE19)
+```
+
+## Opplevd sosial klasse
+*R1DEMOVATE15*
+
+> Vi snakker noen ganger om at det finnes ulike sosiale grupper eller samfunnsklasser. Hvis du skulle plassere seg selv i en slik samfunnsklasse, hvilken av disse skulle det være?
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+# For GGPLOT:
+R1DEMOVATE15_1$Order <- NA 
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Underklasse",             "Order"] <- 1
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Arbeiderklasse",          "Order"] <- 2
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Lavere middelklasse",     "Order"] <- 3
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Middelklasse",            "Order"] <- 4
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Høyere middelklasse",     "Order"] <- 5
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Overklasse",              "Order"] <- 6
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Vet ikke/Ubesvart",       "Order"] <- 7
+
+R1DEMOVATE15_1 %>%
+  ungroup() %>%
+  ggplot(aes(x = reorder(R1DEMOVATE15, desc(Order)), y = n, fill = R1DEMOVATE15)) +
+  geom_col() +
+  labs(x = "Opplevd sosial klasse", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på opplevd sosial klasse") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+R1DEMOVATE15_1$Order <- NULL
+
+# Tabell:
+R1DEMOVATE15 %>% 
+  kable(col.names = c("Verdi", "Antall"), caption = "Opplevd sosial klasse") %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE15_1, R1DEMOVATE15)
+```

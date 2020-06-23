@@ -1,0 +1,2867 @@
+--- 
+title: "DEMOVATE Survey 2020"
+author: "Daniel Instebø og Sveinung Arnesen"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+#bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+always_allow_html: true
+github-repo: rstudio/bookdown-demo
+description: "Dette er en digital bok som viser dokumentasjon og analyser av DEMOVATE Survey gjennomført Desember 2019 - Januar 2020."
+---
+```{r include=FALSE, cache=FALSE}
+```
+
+# Oversikt {-#Oversikt}
+
+Dette er en digital dokumentasjonsrapport og analyser av DEMOVATE Survey gjennomført 16. Desember 2019 - 13. Januar 2020. Gjennomføringen av analysen er gjennomført av Respons Analyse på oppdrag fra NORCE. Undersøkelsen er gjennomført på telefon hvor det er gjennomført et representativt utvalg av innbyggere 18 år og eldre.
+
+Undersøkelsen omhandler lokaldemokrati i Bergen og inneholder 7 bakgrunnsspørsmål, 2 conjoint-eksperimenter og ulike holdningsspørsmål. Intervjuene var beregnet til å vare i 10 minutter i gjennomsnitt. I etterkant viste det seg at dette tok litt lenger tid med et gjennomsnitt på 11,5 minutter. 
+
+## Utvalg og frafall {-#Utvalg-og-frafall}
+
+Utvalget er trukket fra Bisnodes register over private telefonnumre i Norge. Nedenfor er en oversikt over gjennomføring og frafall i undersøkelsen. Dette er delt inn i kategoriene *Ubesvart*, *Nekt*, *Utenfor målgruppen* og *Intervju*.
+
+* *Ubesvart:* Personer forsøkt oppringt uten å oppnå kontakt.
+* *Nekt:* Personer som ikke ønsker delta i undersøkelsen.
+* *Utenfor målgruppen:* Personer som ikke lar seg intervjue på en faglig forsvarlig måte. Dette kan gjelde personer som ikke forstår norsk helt eller delvis, personer som hører dårlig, eller personer som ellers gir uttrykk for å ikke forstå undersøkelsen.
+
+På bakgrunn av dette kan vi oppsummere frafallet:
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+library(kableExtra)
+library(tidyverse)
+Kategori <- c("Ubesvart", "Nekt", "Utenfor Målgruppen", "Intervju", "Sum brutto")
+Utfall <- c(6373, 4944, 188, 900, 12405)
+utvalg <- data.frame(Kategori, Utfall)
+# ----
+
+utvalg %>%
+  kable() %>%
+  kable_styling()
+
+```
+
+Svarprosenten kan regnes ut ved å dele summen av de som lot seg intervjue på summen av de som lot seg intervjue pluss de som nektet. For denne undersøkelsen er svarprosenten 15.4%, noe som er litt mindre enn vanlig. Dette kan imidlertid ses i sammenheng med at dato for datainnsamlingen ble gjennomført tett opp mot jul. Siden dette er en travel tid kan det hende at svarvilligheten var noe lavere enn normalt.
+
+## Instruksjoner til intervjuer {-#Instruksjoner-til-intervjuer}
+
+*Kanskje dette skal i appendix istedetfor*
+
+For å sikre så god datakvalitet som mulig er instruksjonene til intervjuerne standardisert i så stor grad som mulig. Henvendelsene til respondenten starter med at intervjuerne leser opp en fastlagt intro:
+
+*God kveld, mitt navn er [...], og jeg ringer fra Respons Analyse i forbindelse med en spørreundersøkelse vi gjennomfører for Norwegian Research Centre og Universitetet i Bergen. Vi er i denne undersøkelsen interessert i hva innbyggerne i Bergen mener om ulike forhold og saker i Bergen. Alle svarene dine vil bli behandlet konfidensielt. 
+Kunne du tenke deg å svare på noen spørmål? Det tar ca. 10 minutter*
+
+```{r include=FALSE, cache=FALSE}
+```
+
+<!--chapter:end:index.Rmd-->
+
+```{r include=FALSE, cache=FALSE}
+```
+
+
+```{r start matter, echo = FALSE, warning = FALSE, message= FALSE}
+library(tidyverse)
+library(kableExtra)
+library(haven)
+library(janitor)
+library(data.table)
+
+# GGplot:
+theme_set(theme_bw())
+
+# Data:
+setwd("D:/200 NORCE/Demovate/Survey/01 - Dokumentasjon")
+d <- read_sav("responsanalyse.SAV")
+
+# Factorize:
+variables_with_labels = map(d, function(x) attr(x, "class") == "haven_labelled") %>% unlist() %>%  names()
+d_factored = d %>% mutate_at( vars(variables_with_labels), as_factor)
+rm(variables_with_labels)
+
+# Data wrangling:
+d_factored <- d_factored %>%
+  mutate(
+         # Characters:
+         Bydel = as.character(Bydel),
+         bydel_8 = as.character(bydel_8),
+         R1DEMOVATE21 = as.character(R1DEMOVATE21),
+         aldrkat = as.character(aldrkat),
+         R1DEMOVATE16 = as.character(R1DEMOVATE16),
+         R1DEMOVATE18 = as.character(R1DEMOVATE18),
+         R1DEMOVATE19 = as.character(R1DEMOVATE19),
+         R1DEMOVATE15 = as.character(R1DEMOVATE15),
+         
+         # Numerics:
+         R1DEMOVATE7_1 = as.numeric(R1DEMOVATE7_1),
+         R1DEMOVATE7_2 = as.numeric(R1DEMOVATE7_2),
+         R1DEMOVATE7_3 = as.numeric(R1DEMOVATE7_3),
+         
+         # Attempt:
+         R1DEMOVATE18 = str_replace(R1DEMOVATE18, "Universitet og høyskole 2 år eller mer", "Høyere utdanning, > 2 år"),
+         R1DEMOVATE18 = str_replace(R1DEMOVATE18, "Universitet og høyskole, mindre enn 2 år", "Høyere utdanning, < 2 år"),
+         
+         R1DEMOVATE1 =  str_remove(R1DEMOVATE1, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE1 =  str_remove(R1DEMOVATE1, " - Jeg motsetter meg det fullstendig"),
+
+         R1DEMOVATE2 =  str_remove(R1DEMOVATE2, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE2 =  str_remove(R1DEMOVATE2, " - Jeg motsetter meg det fullstendig"),
+
+         R1DEMOVATE3 =  str_remove(R1DEMOVATE3, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE3 =  str_remove(R1DEMOVATE3, " - Jeg motsetter meg det fullstendig"),
+
+         R1DEMOVATE4 =  str_remove(R1DEMOVATE4, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE4 =  str_remove(R1DEMOVATE4, " - Jeg motsetter meg det fullstendig"),
+
+         R1DEMOVATE5 = str_remove(R1DEMOVATE5, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE5 = str_remove(R1DEMOVATE5, " - Jeg motsetter meg det fullstendig"),
+         
+         R1DEMOVATE8 = str_remove(R1DEMOVATE8, " - Full tillit"),
+         R1DEMOVATE8 = str_remove(R1DEMOVATE8, " - Ingen tillit i det hele tatt"),
+         
+         R1DEMOVATE9 = str_remove(R1DEMOVATE9, " - Full tillit"),
+         R1DEMOVATE9 = str_remove(R1DEMOVATE9, " - Ingen tillit i det hele tatt"),
+         
+         R1DEMOVATE10 = str_remove(R1DEMOVATE10, " - Fullt og helt"),
+         R1DEMOVATE10 = str_remove(R1DEMOVATE10, " - Ikke i det hele tatt"),
+         
+         R1DEMOVATE11 = str_remove(R1DEMOVATE11, " - Passer fullt og helt"),
+         R1DEMOVATE11 = str_remove(R1DEMOVATE11, " - Passer ikke i det hele tatt"),
+         
+         R1DEMOVATE12 = str_remove(R1DEMOVATE12, " - Venstre"),
+         R1DEMOVATE12 = str_remove(R1DEMOVATE12, " - Høyre")
+
+         )
+
+#R1DEMOVATE10$R1DEMOVATE10 <- str_remove(R1DEMOVATE10$R1DEMOVATE10, " - Fullt og helt")
+#R1DEMOVATE10$R1DEMOVATE10 <- str_remove(R1DEMOVATE10$R1DEMOVATE10, " - Ikke i det hele tatt")
+
+#R1DEMOVATE8$R1DEMOVATE8 <- str_remove(R1DEMOVATE8$R1DEMOVATE8, " - Full tillit")
+#R1DEMOVATE8$R1DEMOVATE8 <- str_remove(R1DEMOVATE8$R1DEMOVATE8, " - Ingen tillit i det hele tatt")
+
+#R1DEMOVATE11$R1DEMOVATE11 <- str_remove(R1DEMOVATE11$R1DEMOVATE11, " - Passer fullt og helt")
+#R1DEMOVATE11$R1DEMOVATE11 <- str_remove(R1DEMOVATE11$R1DEMOVATE11, " - Passer ikke i det hele tatt")
+
+
+# --------------- Edit R1DEMOVATE13:
+d_factored[d_factored$o_R1DEMOVATE13 == "BOMPENGE","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "BOMPENGEPARTIET","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "folkje askjon mot bompenger","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "De kristine'","R1DEMOVATE13"] <- "Partiet De Kristne"
+
+# --------------- Create Background Questions data frame:
+Variabel <- c("ID", "Bydel", "Bydel_8", "Alder", "Alder (kategorisk)", "Fødselsår", "Postnummer", "Mann/Kvinne", "Jobbstatus", "Utdanning", "Bruttoinntekt", "Opplevd sosial klasse")
+Variabelnavn <- c("IntervjuID", "bydel", "bydel_8", "alder", "aldrkat", "R1DEMOVATE22", "R1DEMOVATE24", "R1DEMOVATE21", "R1DEMOVATE16", "R1DEMOVATE18", "R1DEMOVATE19", "R1DEMOVATE15")
+Bakgrunn <- data.frame(Variabel, Variabelnavn)
+rm(Variabel, Variabelnavn)
+
+# --------------- Create Count for each relevant variable
+Bydel          <- d_factored %>%   group_by(Bydel)          %>%   count(Bydel)        %>%  adorn_totals("row") # 4 Bydeler
+bydel_8        <- d_factored %>%   group_by(bydel_8)        %>%   count(bydel_8)      %>%  adorn_totals("row") # 8 Bydeler
+R1DEMOVATE24   <- d_factored %>%   group_by(R1DEMOVATE24)   %>%   count(R1DEMOVATE24) %>%  adorn_totals("row") # Postnummer
+R1DEMOVATE22   <- d_factored %>%   group_by(R1DEMOVATE22)   %>%   count(R1DEMOVATE22) %>%  adorn_totals("row") # Fødselsår
+alder          <- d_factored %>%   group_by(alder)          %>%   count(alder)        %>%  adorn_totals("row") # Oppgitt alder
+aldrkat        <- d_factored %>%   group_by(aldrkat)        %>%   count(aldrkat)      %>%  adorn_totals("row") # Aldersgategorier
+R1DEMOVATE21   <- d_factored %>%   group_by(R1DEMOVATE21)   %>%   count(R1DEMOVATE21) %>%  adorn_totals("row") # Kjønn
+R1DEMOVATE16   <- d_factored %>%   group_by(R1DEMOVATE16)   %>%   count(R1DEMOVATE16) %>%  adorn_totals("row") # Yrkesstatus
+# Here should R1DEMOVATE18 (education) normally be placed, but is placed further down because of further wrangling
+R1DEMOVATE19   <- d_factored %>%   group_by(R1DEMOVATE19)   %>%   count(R1DEMOVATE19) %>%  adorn_totals("row") # Inntekt
+R1DEMOVATE15_1 <- d_factored %>%   group_by(R1DEMOVATE15)   %>%   count(R1DEMOVATE15)                          # Social class - for ggplot
+R1DEMOVATE15   <- d_factored %>%   group_by(R1DEMOVATE15)   %>%   count(R1DEMOVATE15) %>%  adorn_totals("row") # Social class - for table
+
+
+
+# -------------- Create count and wrangle education-variable:
+R1DEMOVATE18 <- d_factored %>%   group_by(R1DEMOVATE18) %>%   count(R1DEMOVATE18) %>%  ungroup() %>%  
+  mutate(Survey = (n / 900),
+         SSB = c((50590/223785), (33076/223785), (64090/223785), (76029/223785))) %>%
+  select(-n) %>%
+  reshape2::melt(id.vars = "R1DEMOVATE18") %>%
+  mutate(my.order = c(4,1,2,3,4,1,2,3))
+
+```
+
+# Bakgrunn
+
+Her er en oversikt over svarfordeling på de ulike bakgrunnsspørsmålene.
+
+```{r bakgrunnsinfo, echo = FALSE, warning = FALSE, message = FALSE}
+Bakgrunn %>%
+  kable() %>%
+  kable_styling()
+
+rm(Bakgrunn)
+```
+
+## Bydel
+*Bydel* og *bydel_8*
+
+Det er to bydelsvariabler i datasettet, ut fra om man deler opp i x eller y bydeler. Hentet fra telefonregisteret.
+
+### Bydel
+
+```{r bydel, echo = FALSE, warning = FALSE, message = FALSE}
+Bydel %>% filter(Bydel != "Total") %>%
+  ggplot(aes(x = fct_reorder(Bydel, desc(n)), y = n, fill = Bydel)) +
+  geom_col() +
+  labs(x = "Bydel", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på bydeler") + 
+  theme(legend.position = "none")
+
+Bydel %>%
+  kable(caption = "Bydel", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(Bydel)
+```
+
+### bydel_8
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+bydel_8 %>% filter(bydel_8 != "Total") %>%
+  ggplot(aes(x = fct_reorder(bydel_8, n), y = n, fill = bydel_8)) +
+  geom_col() +
+  labs(x = "Bydel", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på bydeler") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+bydel_8 %>%
+  kable(caption = "Bydel_8", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(bydel_8)
+```
+
+
+## Postnummer
+*R1DEMOVATE24*
+
+> Hva er postnummeret der du bor?   
+
+```{r postnummer, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE24 %>%
+  kable(caption = "Postnummer", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE24)
+```
+
+
+## Alder
+*R1DEMOVATE22*, *alder* og *aldrkat*
+
+Det er *tre* aldersvariabler i datasettet. **R1DEMOVATE22** for fødselsår, **alder** for alder og **aldrkat** for alderskategorier.
+
+De to førstnevnte er i praksis like men speilvendt siden alder er dagens dato minus fødselsår. Fødselsår er et spørsmål i spørreundersøkelsen (R1DEMOVATE22), mens "alder" er, slik NORCE forstår det, hentet fra Respons Analyses register. Siden fødselsår er selvrapportert i samtalen antas dette å være mest troverdig dersom det skulle være avvik.
+
+### R1DEMOVATE22
+> Hvilket år er du født?   
+
+```{r fødselsår, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE22 %>% filter(R1DEMOVATE22 != "Total") %>%
+  ggplot(aes(x = R1DEMOVATE22, y = n, group = 1)) +
+  geom_smooth(method = "loess", alpha = 0.4, color = "#AFAFAF", lty = 2) +
+  geom_line(color="gray40") +
+  geom_point(shape=21, color="black", fill="#69b3a2", size=4) +
+  labs(x = "Fødselsår", y = "Antall", title = "Antall respondenter, fordelt på fødselsår") +
+  theme(legend.position = "none") +
+  scale_x_discrete(breaks=c(1935, 1940, 1945, 1950, 1955, 1960, 1965, 1970, 1975, 1980, 1985, 1990, 1995, 2000))
+
+R1DEMOVATE22 %>%
+  kable(caption = "Fødselsår", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE22)
+```
+
+### alder
+
+```{r oppgitt alder, echo = FALSE, warning = FALSE, message = FALSE}
+alder %>% filter(alder != "Total") %>%
+  ggplot(aes(x = alder, y = n, group = 1)) +
+  geom_smooth(method = "loess", alpha = 0.4, color = "#AFAFAF", lty = 2) +
+  geom_line(color="gray40") +
+  geom_point(shape=21, color="black", fill="#69b3a2", size=4) +
+  labs(x = "Alder", y = "Antall", title = "Antall respondenter, fordelt på alder") +
+  theme(legend.position = "none") +
+  scale_x_discrete(breaks=c(20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85))
+
+alder %>%
+  kable(caption = "Alder", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(alder)
+```
+
+### Aldrkat
+
+```{r alderskategorier, echo = FALSE, warning = FALSE, message = FALSE}
+my.order <- c(2,3,4,1)
+
+aldrkat %>% filter(aldrkat != "Total") %>%
+  ggplot(aes(x = reorder(aldrkat, my.order), y = n, fill = aldrkat)) +
+  geom_col() +
+  labs(x = "Alder", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på aldersgrupper") + 
+  theme(legend.position = "none")
+
+aldrkat %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(aldrkat)
+```
+
+
+## Mann / Kvinne
+*R1DEMOVATE21*
+
+> Kjønn:   
+
+```{r kjønn, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE21 %>% filter(R1DEMOVATE21 != "Total") %>%
+  ggplot(aes(x = R1DEMOVATE21, y = n, fill = R1DEMOVATE21)) +
+  geom_col() +
+  labs(x = "Kjønn", y = "Antall", title = "Antall respondenter, fordelt på Kjønn") + 
+  theme(legend.position = "none")
+
+R1DEMOVATE21 %>%
+  kable(caption = "Kjønn", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE21)
+```
+
+## Yrkesstatus
+*R1DEMOVATE16*
+
+> Er du..?
+
+```{r Yrkesstatus, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE16 %>% filter(R1DEMOVATE16 != "Total") %>%
+  ggplot(aes(x = fct_reorder(R1DEMOVATE16, n), y = n, fill = R1DEMOVATE16)) +
+  geom_col() +
+  labs(x = "Yrkesstatus", y = "Antall", title = "Respondentenes yrkesstatus") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+R1DEMOVATE16 %>% 
+  kable(caption = "Yrkesstatus", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE16)
+```
+
+## Utdanning
+*R1DEMOVATE18*
+
+> Hva er din høyeste fullførte utdanning?
+
+```{r Utdanningsnivå, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE18 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE18, my.order), y = value, fill = variable)) +
+  geom_col(position = "dodge") +
+  labs(x = "Utdanningsnivå", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på utdanningsnivå sammenliknet med statistikk fra SSB (i prosent)", fill = "Variabel") +
+  guides(fill = guide_legend(reverse=TRUE)) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  coord_flip()
+
+rm(R1DEMOVATE18, my.order)
+
+d_factored %>% 
+  group_by(R1DEMOVATE18)   %>% 
+  count(R1DEMOVATE18) %>%
+  adorn_totals("row") %>%
+  kable(col.names = c("Verdi", "Antall"), caption = "Utdanningsnivå") %>%
+  kable_styling(full_width = FALSE, position = "center") 
+
+```
+
+## Bruttointekt
+*R1DEMOVATE19*
+
+> Hva er din brutto årsinntekt for tiden?
+
+```{r Bruttoinntekt, echo = FALSE, warning = FALSE, message = FALSE}
+# Need to change order:
+R1DEMOVATE19$Order <- NA 
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "Inntil 150 000",          "Order"] <- 1
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "150 001 - 300 000",       "Order"] <- 2
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "300 001 - 400 000",       "Order"] <- 3
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "400 001 - 500 000",       "Order"] <- 4
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "500 001 - 600 000",       "Order"] <- 5
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "600 001 - 700 000",       "Order"] <- 6
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "700 001 - 1 million",     "Order"] <- 7
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "Mer enn 1 million",       "Order"] <- 8
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "Ikke sikker/Ubesvart",    "Order"] <- 9
+R1DEMOVATE19[R1DEMOVATE19$R1DEMOVATE19 == "Total",                   "Order"] <- 10
+
+R1DEMOVATE19 %>% filter(R1DEMOVATE19 != "Total") %>%
+  ungroup() %>%
+  ggplot(aes(x = reorder(R1DEMOVATE19, desc(Order)), y = n, fill = R1DEMOVATE19)) +
+  geom_col() +
+  labs(x = "Inntektsnivå", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på inntektsnivå") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+R1DEMOVATE19$Order <- NULL
+
+R1DEMOVATE19 %>% 
+  kable(caption = "Bruttoinntekt", col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE19)
+```
+
+## Opplevd sosial klasse
+*R1DEMOVATE15*
+
+> Vi snakker noen ganger om at det finnes ulike sosiale grupper eller samfunnsklasser. Hvis du skulle plassere seg selv i en slik samfunnsklasse, hvilken av disse skulle det være?
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+# For GGPLOT:
+R1DEMOVATE15_1$Order <- NA 
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Underklasse",             "Order"] <- 1
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Arbeiderklasse",          "Order"] <- 2
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Lavere middelklasse",     "Order"] <- 3
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Middelklasse",            "Order"] <- 4
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Høyere middelklasse",     "Order"] <- 5
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Overklasse",              "Order"] <- 6
+R1DEMOVATE15_1[R1DEMOVATE15_1$R1DEMOVATE15 == "Vet ikke/Ubesvart",       "Order"] <- 7
+
+R1DEMOVATE15_1 %>%
+  ungroup() %>%
+  ggplot(aes(x = reorder(R1DEMOVATE15, desc(Order)), y = n, fill = R1DEMOVATE15)) +
+  geom_col() +
+  labs(x = "Opplevd sosial klasse", y = "Antall", title = "Antall respondenter", subtitle = "fordelt på opplevd sosial klasse") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+R1DEMOVATE15_1$Order <- NULL
+
+# Tabell:
+R1DEMOVATE15 %>% 
+  kable(col.names = c("Verdi", "Antall"), caption = "Opplevd sosial klasse") %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE15_1, R1DEMOVATE15)
+```
+```{r include=FALSE, cache=FALSE}
+```
+
+<!--chapter:end:01-intro.Rmd-->
+
+```{r include=FALSE, cache=FALSE}
+```
+# Holdninger
+
+Her er en oversikt over svarfordeling på de ulike holdningsspørsmålene
+
+```{r Deskriptiv statistikk 2, echo = FALSE, warning = FALSE, message = FALSE}
+Variabel <- c("Turistskatt", "Boligbygging", "Personvern og terror", "Ulikhet", "Tigging", "Tillit til politikere", "Tillit til medier", "Politisk innflytelse", "Lokalpolitikk og opplevd kompleksitet", "Politisk ideologi", "Partisympatier - valg i morgen", "Partisympatier - Sist stortingsvalg", "Stemte ved valget 2019", "Viktigste politiske sak")
+Variabelnavn <- c("R1DEMOVATE1",
+                  "R1DEMOVATE2",
+                  "R1DEMOVATE3",
+                  "R1DEMOVATE4",
+                  "R1DEMOVATE5",
+                  "R1DEMOVATE8",
+                  "R1DEMOVATE9",
+                  "R1DEMOVATE10",
+                  "R1DEMOVATE11",
+                  "R1DEMOVATE12",
+                  "R1DEMOVATE13",
+                  "R1DEMOVATE14",
+                  "R1DEMOVATE23",
+                  "R1DEMOVATE20_x")
+
+Bakgrunn <- data.frame(Variabel, Variabelnavn)
+# ----
+
+Bakgrunn %>%
+  kable(caption = "Deskriptiv statistikk") %>%
+  kable_styling()
+
+rm(Bakgrunn, Variabel, Variabelnavn)
+```
+
+## Politiske saker
+
+Her vises svarene på spørsmål om konkrete politiske saker som kan brukes i byborgerpanelet. Dette er spørsmål om **turistskatt**, **boligbygging på Store Lungegårdsvann**, avveiningen mellom **personvern og beskyttelse mot potensielle terrortrusler**, **økonomisk ulikhet** og **tiggeforbud**.
+
+```{r Politiske saker, echo = FALSE, warning = FALSE, message = FALSE, fig.height= 8}
+# Create separate df for each question
+R1DEMOVATE1 <- d_factored %>% group_by(R1DEMOVATE1) %>%   count(R1DEMOVATE1) %>%   ungroup() %>%  filter(R1DEMOVATE1 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE2 <- d_factored %>% group_by(R1DEMOVATE2) %>%   count(R1DEMOVATE2) %>%   ungroup() %>%  filter(R1DEMOVATE2 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE3 <- d_factored %>% group_by(R1DEMOVATE3) %>%   count(R1DEMOVATE3) %>%   ungroup() %>%  filter(R1DEMOVATE3 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE4 <- d_factored %>% group_by(R1DEMOVATE4) %>%   count(R1DEMOVATE4) %>%   ungroup() %>%  filter(R1DEMOVATE4 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE5 <- d_factored %>% group_by(R1DEMOVATE5) %>%   count(R1DEMOVATE5) %>%   ungroup() %>%  filter(R1DEMOVATE5 != "11 - Ikke sikker/Ubesvart") 
+
+# Edit Colnames:
+colnames(R1DEMOVATE1) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE2) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE3) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE4) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE5) <- c("Verdi", "Antall")
+
+# Create new column to distinguish between questions (used for ggplot facet_wrap)
+R1DEMOVATE1 <- R1DEMOVATE1 %>% mutate(Variabel = "R1DEMOVATE1")
+R1DEMOVATE2 <- R1DEMOVATE2 %>% mutate(Variabel = "R1DEMOVATE2")
+R1DEMOVATE3 <- R1DEMOVATE3 %>% mutate(Variabel = "R1DEMOVATE3")
+R1DEMOVATE4 <- R1DEMOVATE4 %>% mutate(Variabel = "R1DEMOVATE4")
+R1DEMOVATE5 <- R1DEMOVATE5 %>% mutate(Variabel = "R1DEMOVATE5")
+
+# Collect / merge the questions in one df in long-form and convert Value-column from char to num
+Byborger <- rbind(R1DEMOVATE1, R1DEMOVATE2, R1DEMOVATE3, R1DEMOVATE4, R1DEMOVATE5)
+Byborger$Verdi <- as.numeric(Byborger$Verdi)
+
+# Factorize Variable-column and give them labels for ggplot:
+Byborger$Variabel <- factor(Byborger$Variabel, levels = c("R1DEMOVATE1", "R1DEMOVATE2", "R1DEMOVATE3", "R1DEMOVATE4", "R1DEMOVATE5"), 
+                           labels = c("Turistskatt", "Boligbygging", "Personvern", "Økonomisk ulikhet", "Tiggeforbud"))
+
+# Ggplot:
+Byborger %>% 
+  ggplot(aes(x = factor(Verdi), y = Antall, group = Variabel, color = Variabel)) +
+  geom_line(size = 0.9, alpha = 0.8) +
+  geom_point(size = 2.5, alpha = 0.8) +
+  facet_wrap(~ Variabel, ncol = 2) +
+  labs(x = "Verdi", y = "Antall", title = "Personlig oppfatning om ulike politiske saker", caption = "Spørsmål: På en skala fra 0 til 10, der 0 betyr at du motsetter deg det fullstendig\n og 10 betyr at du støtter det fullstendig, hvor sterkt støtter eller motsetter du deg [Politisk sak]?") +
+  theme(legend.position = "none")
+
+rm(R1DEMOVATE1, R1DEMOVATE2, R1DEMOVATE3, R1DEMOVATE4, R1DEMOVATE5)
+```
+
+**Deskriptiv statistikk:**
+
+```{r echo = FALSE, eval= FALSE, error = FALSE, warning = FALSE, message = FALSE}
+# NB: Kun brukt for deskriptiv statistikk i underliggende chunk.
+# Skal ikke vises i dokumentasjon - derfor eval = FALSE.
+
+Byborger2 <- d_factored %>%
+  select(IntervjuID, R1DEMOVATE1, R1DEMOVATE2, R1DEMOVATE3, R1DEMOVATE4, R1DEMOVATE5) %>%
+  filter(R1DEMOVATE1 != "11 - Ikke sikker/Ubesvart",
+         R1DEMOVATE2 != "11 - Ikke sikker/Ubesvart",
+         R1DEMOVATE3 != "11 - Ikke sikker/Ubesvart",
+         R1DEMOVATE4 != "11 - Ikke sikker/Ubesvart",
+         R1DEMOVATE5 != "11 - Ikke sikker/Ubesvart") %>%
+  mutate(R1DEMOVATE1 = as.numeric(R1DEMOVATE1),
+         R1DEMOVATE2 = as.numeric(R1DEMOVATE2),
+         R1DEMOVATE3 = as.numeric(R1DEMOVATE3),
+         R1DEMOVATE4 = as.numeric(R1DEMOVATE4),
+         R1DEMOVATE5 = as.numeric(R1DEMOVATE5)) 
+
+Byborger2 %>%
+    summary()
+
+# sd(Byborger2$R1DEMOVATE1)
+```  
+
+
+```{r Deskrpitiv statistikk 3, echo = FALSE, warning = FALSE, message = FALSE}
+
+Variabel <- c("Turistskatt", "Boligbygging", "Personvern", "Økonomisk ulikhet", "Tiggeforbud")
+Min <- c(0,0,0,0,0)
+Max <- c(10,10,10,10,10)
+Median <- c(8,5,5,8,6)
+Snitt <- c(7.08, 4.02, 5.11, 7.34, 5.82)
+Std.avvik <- c(2.68, 3.22, 2.92, 2.61, 3.54)
+Total <- c(884,876,888,893,896)
+
+Byborger_sum <- data.frame(Variabel,Min,Max,Median,Snitt,Std.avvik,Total)
+Byborger_sum %>%
+  kable() %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+**Fordeling:**
+
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+Byborger <- Byborger %>% spread(Variabel, Antall)
+Byborger %>% 
+  adorn_totals("row", na.rm = F) %>% 
+  kable(caption = "Fordeling av respondenter") %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(Byborger,Byborger2,Byborger_sum, Max, Median, Min, Skala, Snitt, Std.avvik, Total, Variabel)
+```
+
+
+### Turistskatt
+*R1DEMOVATE1*
+
+> Det har vært oppe til diskusjon om man skal innføre skatt på cruiseturismen i Bergen. Skatten skal gå til vedlikehold av fasiliteter som turistene bruker. På en skala fra 0 til 10, der 0 betyr at du motsetter deg det fullstendig og 10 betyr at du støtter det fullstendig, hvor sterkt støtter eller motsetter du deg en slik turistskatt?
+
+```{r Turistskatt, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE1 <- d_factored %>% 
+  group_by(R1DEMOVATE1) %>% 
+  count(R1DEMOVATE1) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE1 != "11 - Ikke sikker/Ubesvart") 
+
+R1DEMOVATE1$Order <- NA 
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "0",  "Order"] <- 1
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "1",  "Order"] <- 2
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "2",  "Order"] <- 3
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "3",  "Order"] <- 4
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "4",  "Order"] <- 5
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "5",  "Order"] <- 6
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "6",  "Order"] <- 7
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "7",  "Order"] <- 8
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "8",  "Order"] <- 9
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "9",  "Order"] <- 10
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "10", "Order"] <- 11
+
+R1DEMOVATE1 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE1, Order), y = n, fill = R1DEMOVATE1)) +
+  geom_col() + 
+  labs(x = "\n0 = Jeg motsetter meg det fullstendig,        10 = Jeg støtter det fullstendig", y = "Antall", title = "Turistskatt") +
+  theme(legend.position = "none")
+
+R1DEMOVATE1$Order <- NULL
+rm(R1DEMOVATE1)
+```
+
+
+```{r Turistskatt fordelt på kjønn, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
+# Samme spørsmål, fordelt på kjønn:
+R1DEMOVATE1 <- d_factored %>% 
+  select(R1DEMOVATE1, R1DEMOVATE21) %>%
+  group_by(R1DEMOVATE1) %>% 
+  count(R1DEMOVATE1, R1DEMOVATE21) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE1 != "11 - Ikke sikker/Ubesvart") 
+
+R1DEMOVATE1$Order <- NA 
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "0",  "Order"] <- 1
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "1",  "Order"] <- 2
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "2",  "Order"] <- 3
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "3",  "Order"] <- 4
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "4",  "Order"] <- 5
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "5",  "Order"] <- 6
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "6",  "Order"] <- 7
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "7",  "Order"] <- 8
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "8",  "Order"] <- 9
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "9",  "Order"] <- 10
+R1DEMOVATE1[R1DEMOVATE1$R1DEMOVATE1 == "10", "Order"] <- 11
+
+R1DEMOVATE1 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE1, Order), y = n, fill = R1DEMOVATE21)) +
+  geom_col(position = "dodge") + 
+  labs(x = "\n0 = Jeg motsetter meg det fullstendig,        10 = Jeg støtter det fullstendig", y = "Antall", title = "Turistskatt") +
+  theme(legend.position = "none")
+
+R1DEMOVATE1$Order <- NULL
+rm(R1DEMOVATE1)
+```
+
+
+### Boligbygging
+*R1DEMOVATE2*
+
+> Det har i enkelte avisinnlegg blitt tatt til orde for å bygge boliger på deler av Store Lungegårdsvann. På samme skala fra 0 til 10, der 0 betyr at du motsetter deg det fullstendig og 10 betyr at du støtter det fullstendig, hvor sterkt støtter eller motsetter du deg at dette gjøres?
+
+```{r Boligbygging, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE2 <- d_factored %>% 
+  group_by(R1DEMOVATE2) %>% 
+  count(R1DEMOVATE2) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE2 != "11 - Ikke sikker/Ubesvart") 
+
+R1DEMOVATE2$Order <- NA 
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "0",  "Order"] <- 1
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "1",  "Order"] <- 2
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "2",  "Order"] <- 3
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "3",  "Order"] <- 4
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "4",  "Order"] <- 5
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "5",  "Order"] <- 6
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "6",  "Order"] <- 7
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "7",  "Order"] <- 8
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "8",  "Order"] <- 9
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "9",  "Order"] <- 10
+R1DEMOVATE2[R1DEMOVATE2$R1DEMOVATE2 == "10", "Order"] <- 11
+
+R1DEMOVATE2 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE2, Order), y = n, fill = R1DEMOVATE2)) +
+  geom_col() + 
+  labs(x = "\n0 = Jeg motsetter meg det fullstendig,        10 = Jeg støtter det fullstendig", y = "Antall", title = "Boligbygging i Store Lungegårdsvann") +
+  theme(legend.position = "none")
+
+R1DEMOVATE2$Order <- NULL
+rm(R1DEMOVATE2)
+```
+
+
+### Personvern og terror
+*R1DEMOVATE3*
+
+> Og på samme skala, hvor sterkt støtter eller motsetter du deg følgende forslag:
+> Myndighetene bør innføre flere tiltak for å beskytte borgerne mot potensielle terrortrusler, selv om dette kan gå på bekostning av personvernet.
+
+```{r Personvern og terror, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE3 <- d_factored %>% 
+  group_by(R1DEMOVATE3) %>% 
+  count(R1DEMOVATE3) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE3 != "11 - Ikke sikker/Ubesvart") 
+
+R1DEMOVATE3$Order <- NA 
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "0",  "Order"] <- 1
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "1",  "Order"] <- 2
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "2",  "Order"] <- 3
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "3",  "Order"] <- 4
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "4",  "Order"] <- 5
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "5",  "Order"] <- 6
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "6",  "Order"] <- 7
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "7",  "Order"] <- 8
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "8",  "Order"] <- 9
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "9",  "Order"] <- 10
+R1DEMOVATE3[R1DEMOVATE3$R1DEMOVATE3 == "10", "Order"] <- 11
+
+R1DEMOVATE3 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE3, Order), y = n, fill = R1DEMOVATE3)) +
+  geom_col() + 
+  labs(x = "\n0 = Jeg motsetter meg det fullstendig,        10 = Jeg støtter det fullstendig", y = "Antall", title = "Personvern og terror") +
+  theme(legend.position = "none")
+
+R1DEMOVATE3$Order <- NULL
+rm(R1DEMOVATE3)
+```
+
+### Ulikhet
+*R1DEMOVATE4*
+
+> Byrådet bør jobbe for å i større grad redusere økonomiske forskjeller i samfunnet
+
+```{r Økonomisk ulikhet, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE4 <- d_factored %>% 
+  group_by(R1DEMOVATE4) %>% 
+  count(R1DEMOVATE4) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE4 != "11 - Ikke sikker/Ubesvart") 
+
+R1DEMOVATE4$Order <- NA 
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "0",  "Order"] <- 1
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "1",  "Order"] <- 2
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "2",  "Order"] <- 3
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "3",  "Order"] <- 4
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "4",  "Order"] <- 5
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "5",  "Order"] <- 6
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "6",  "Order"] <- 7
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "7",  "Order"] <- 8
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "8",  "Order"] <- 9
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "9",  "Order"] <- 10
+R1DEMOVATE4[R1DEMOVATE4$R1DEMOVATE4 == "10", "Order"] <- 11
+
+R1DEMOVATE4 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE4, Order), y = n, fill = R1DEMOVATE4)) +
+  geom_col() + 
+  labs(x = "\n0 = Jeg motsetter meg det fullstendig,        10 = Jeg støtter det fullstendig", y = "Antall", title = "Økonomisk ulikhet") +
+  theme(legend.position = "none")
+
+R1DEMOVATE4$Order <- NULL
+rm(R1DEMOVATE4)
+```
+
+### Tigging
+*R1DEMOVATE5*
+
+> Det bør innføres forbud mot tigging på gaten i Bergen
+
+
+```{r Tigging, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE5 <- d_factored %>% 
+  group_by(R1DEMOVATE5) %>% 
+  count(R1DEMOVATE5) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE5 != "11 - Ikke sikker/Ubesvart") 
+
+R1DEMOVATE5$Order <- NA 
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "0",  "Order"] <- 1
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "1",  "Order"] <- 2
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "2",  "Order"] <- 3
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "3",  "Order"] <- 4
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "4",  "Order"] <- 5
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "5",  "Order"] <- 6
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "6",  "Order"] <- 7
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "7",  "Order"] <- 8
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "8",  "Order"] <- 9
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "9",  "Order"] <- 10
+R1DEMOVATE5[R1DEMOVATE5$R1DEMOVATE5 == "10", "Order"] <- 11
+
+R1DEMOVATE5 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE5, Order), y = n, fill = R1DEMOVATE5)) +
+  geom_col() + 
+  labs(x = "\n0 = Jeg motsetter meg det fullstendig,        10 = Jeg støtter det fullstendig", y = "Antall", title = "Tigging på gaten") +
+  theme(legend.position = "none")
+
+R1DEMOVATE5$Order <- NULL
+rm(R1DEMOVATE5)
+```
+
+
+## Tillit til politikere
+*R1DEMOVATE8*
+
+> På en skala fra 0 til 10, der 0 betyr ingen tillit i det hele tatt, og 10 betyr full tillit, hvilken tillit har du generelt sett til politikerne i Bergen kommune?
+
+```{r Politisk tillit, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE8 <- d_factored %>% 
+  group_by(R1DEMOVATE8) %>% 
+  count(R1DEMOVATE8) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE8 != "Ikke sikker/ubesvart") %>%
+  mutate(n = (n/sum(n)))
+
+R1DEMOVATE8$Order <- NA 
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "0",  "Order"] <- 1
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "1",  "Order"] <- 2
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "2",  "Order"] <- 3
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "3",  "Order"] <- 4
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "4",  "Order"] <- 5
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "5",  "Order"] <- 6
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "6",  "Order"] <- 7
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "7",  "Order"] <- 8
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "8",  "Order"] <- 9
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "9",  "Order"] <- 10
+R1DEMOVATE8[R1DEMOVATE8$R1DEMOVATE8 == "10", "Order"] <- 11
+
+R1DEMOVATE8 %>%
+  
+  # Geometries and aesthetics:
+  ggplot(aes(x = reorder(R1DEMOVATE8, Order), y = n, fill = R1DEMOVATE8)) +
+  geom_col() + 
+  
+  # Axis:
+  ## NB: +1 added to geom_vline cause x-axis is a factor
+  scale_y_continuous(breaks = c(0.02, 0.04, 0.06, 0.08, 0.1, 
+                                0.12, 0.14, 0.16, 0.18, 0.2, 
+                                0.22, 0.24, 0.26, 0.28, 0.3),
+                     limits = c(0,0.25),
+                     labels = scales::percent_format(accuracy = 1)) +
+  geom_vline(xintercept = (5.299776+1), linetype = "dashed", color = "red", size = 1.2) + 
+  annotate("text", x = 1.5, y = 0.21, size = 5, color = "red", label = "Snitt = 5.30") +
+  labs(x = "\n0 = Ingen tillit i det hele tatt,        10 = Full tillit", 
+       y = "Andel", 
+       title = "Tillit til politikere") +
+  
+  # Manipulation:
+  theme_bw() +
+  theme(legend.position = "none")
+
+R1DEMOVATE8$Order <- NULL
+rm(R1DEMOVATE8)
+```
+
+**Fordeling:**
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE8 <- d_factored %>% 
+  group_by(R1DEMOVATE8) %>% 
+  count(R1DEMOVATE8) %>% 
+  ungroup() %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE8 %>%
+  kable(col.names = c("Verdi", "Antall"), caption = "Tillit til politikere") %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE8)
+```
+
+## Tillit til medier
+*R1DEMOVATE9*
+
+> Og på samme skala hvilken tillit har du generelt sett til bergenske nyhetsmedier?
+
+```{r Tillit og medier, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE9 <- d_factored %>% 
+  group_by(R1DEMOVATE9) %>% 
+  count(R1DEMOVATE9) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE9 != "Ikke sikker/ubesvart") %>%
+  mutate(n = (n/sum(n)))
+
+R1DEMOVATE9$Order <- NA 
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "0",  "Order"] <- 1
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "1",  "Order"] <- 2
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "2",  "Order"] <- 3
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "3",  "Order"] <- 4
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "4",  "Order"] <- 5
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "5",  "Order"] <- 6
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "6",  "Order"] <- 7
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "7",  "Order"] <- 8
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "8",  "Order"] <- 9
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "9",  "Order"] <- 10
+R1DEMOVATE9[R1DEMOVATE9$R1DEMOVATE9 == "10", "Order"] <- 11
+
+R1DEMOVATE9 %>%
+  
+  # Geometries and aesthetics:
+  ggplot(aes(x = reorder(R1DEMOVATE9, Order), y = n, fill = R1DEMOVATE9)) +
+  geom_col() + 
+  
+  # Axis:
+  # +1 added to geom_vline cause x-axis is a factor
+  scale_y_continuous(breaks = c(0.02, 0.04, 0.06, 0.08, 0.1, 
+                                0.12, 0.14, 0.16, 0.18, 0.2, 
+                                0.22, 0.24, 0.26),
+                     limits = c(0,0.25),
+                     labels = scales::percent_format(accuracy = 1)) +
+  geom_vline(xintercept = (6.544332+1), linetype = "dashed", color = "red", size = 1.2) + 
+  annotate("text", x = 1.5, y = 0.21, size = 5, color = "red", label = "Snitt = 6.54") +
+  labs(x = "\n0 = Ingen tillit i det hele tatt,           10 = Full tillit", 
+       y = "Andel", 
+       title = "Tillit til medier") +
+  
+  # Formating:
+  theme(legend.position = "none")
+
+R1DEMOVATE9$Order <- NULL
+
+rm(R1DEMOVATE9)
+```
+
+**Fordeling:**
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+R1DEMOVATE9 <- d_factored %>% 
+  group_by(R1DEMOVATE9) %>% 
+  count(R1DEMOVATE9) %>% 
+  ungroup() %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE9 %>%
+  kable(col.names = c("Verdi", "Antall"), caption = "Tillit til medier") %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+
+## Politisk innflytelse
+*R1DEMOVATE10*
+
+> På en skala fra 0 til 10, der 0 betyr ikke i det hele tatt og 10 betyr fullt og helt, I hvilken grad vil du si at det politiske systemet i Bergen gir folk som deg innflytelse på det lokale myndigheter gjør?
+
+```{r Politisk innflytelse, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE10 <- d_factored %>% 
+  group_by(R1DEMOVATE10) %>% 
+  count(R1DEMOVATE10) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE10 != "Ikke sikker/ubesvart") %>%
+  mutate(n = (n/sum(n)))
+
+R1DEMOVATE10$Order <- NA 
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "0",  "Order"] <- 1
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "1",  "Order"] <- 2
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "2",  "Order"] <- 3
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "3",  "Order"] <- 4
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "4",  "Order"] <- 5
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "5",  "Order"] <- 6
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "6",  "Order"] <- 7
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "7",  "Order"] <- 8
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "8",  "Order"] <- 9
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "9",  "Order"] <- 10
+R1DEMOVATE10[R1DEMOVATE10$R1DEMOVATE10 == "10", "Order"] <- 11
+
+R1DEMOVATE10 %>%
+  
+  # Geometries and aesthetics:
+  ggplot(aes(x = reorder(R1DEMOVATE10, Order), y = n, fill = R1DEMOVATE10)) +
+  geom_col() + 
+  
+  # Axis:
+  ## +1 added to geom_vline cause x-axis is a factor
+  scale_y_continuous(breaks = c(0.02, 0.04, 0.06, 0.08, 0.1, 
+                                0.12, 0.14, 0.16, 0.18, 0.2, 
+                                0.22, 0.24, 0.26, 0.28, 0.3),
+                     limits = c(0,0.25),
+                     labels = scales::percent_format(accuracy = 1)) +
+  geom_vline(xintercept = (4.429062+1), linetype = "dashed", color = "red", size = 1.2) + 
+  annotate("text", x = 1.5, y = 0.21, size = 5, color = "red", label = "Snitt = 4.43") +
+  labs(x = "\n0 = Ikke i det hele tatt,            10 = Fullt og helt", 
+       y = "Andel", 
+       title = "Politisk innflytelse") +
+  
+  # Formating:
+  theme(legend.position = "none")
+
+R1DEMOVATE10$Order <- NULL
+
+rm(R1DEMOVATE10)
+```
+
+**Fordeling:**
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE10 <- d_factored %>% 
+  group_by(R1DEMOVATE10) %>% 
+  count(R1DEMOVATE10) %>% 
+  ungroup() %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE10 %>%
+  kable(col.names = c("Verdi", "Antall"), caption = "Politisk innflytelse") %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE10)
+```
+
+## Lokalpolitikk og opplevd kompleksitet
+*R1DEMOVATE11*
+
+> På en skala fra 0 til 10, der 0 betyr at det ikke passer i det hele tatt, mens 10 betyr at det passer fullt og helt, hvor godt passer følgende utsagn med din oppfatning? Lokalpolitikken er i blant så innviklet at folk som meg ikke forstår hva den dreier seg om.
+
+```{r Lokalpolitikk, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE11 <- d_factored %>% 
+  group_by(R1DEMOVATE11) %>% 
+  count(R1DEMOVATE11) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE11 != "Ikke sikker/ubesvart") %>%
+  mutate(n = (n/sum(n)))
+
+R1DEMOVATE11$Order <- NA 
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "0",  "Order"] <- 1
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "1",  "Order"] <- 2
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "2",  "Order"] <- 3
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "3",  "Order"] <- 4
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "4",  "Order"] <- 5
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "5",  "Order"] <- 6
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "6",  "Order"] <- 7
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "7",  "Order"] <- 8
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "8",  "Order"] <- 9
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "9",  "Order"] <- 10
+R1DEMOVATE11[R1DEMOVATE11$R1DEMOVATE11 == "10", "Order"] <- 11
+
+R1DEMOVATE11 %>%
+  
+  # Geometries and aesthetics:
+  ggplot(aes(x = reorder(R1DEMOVATE11, Order), y = n, fill = R1DEMOVATE11)) +
+  geom_col() + 
+  
+  # Axis:
+  # +1 added to geom_vline cause x-axis is a factor
+  scale_y_continuous(breaks = c(0.02, 0.04, 0.06, 0.08, 0.1, 
+                                0.12, 0.14, 0.16, 0.18, 0.2, 
+                                0.22, 0.24, 0.26, 0.28, 0.3),
+                     limits = c(0,0.25),
+                     labels = scales::percent_format(accuracy = 1)) +
+  geom_vline(xintercept = (4.42713+1), linetype = "dashed", color = "red", size = 1.2) + 
+  annotate("text", x = 1.5, y = 0.21, size = 5, color = "red", label = "Snitt = 4.42") +
+  labs(x = "\n0 = Passer ikke i det hele tatt              10 = Passer fullt og helt", 
+       y = "Andel", 
+       title = "Lokalpolitikk og opplevd kompleksitet") +
+  
+  # Formating:
+  theme(legend.position = "none")
+
+R1DEMOVATE11$Order <- NULL
+
+rm(R1DEMOVATE11)
+```
+
+**Fordeling:**
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE11 <- d_factored %>% 
+  group_by(R1DEMOVATE11) %>% 
+  count(R1DEMOVATE11) %>% 
+  ungroup() %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE11 %>%
+  kable(col.names = c("Verdi", "Antall"), caption = "Lokalpolitikk og opplevd kompleksitet") %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE11)
+```
+
+## Politisk ideologi
+*R1DEMOVATE12*
+
+> I politikken snakker man ofte om "venstresiden" og "høyresiden". På en skala der 0 representerer de som står helt til venstre politisk, og 10 representerer de som står helt til høyre politisk, hvordan vil du plassere deg selv på en slik skala?
+
+```{r Politisk ideologi, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE12 <- d_factored %>% 
+  group_by(R1DEMOVATE12) %>% 
+  count(R1DEMOVATE12) %>% 
+  ungroup() %>%
+  filter(R1DEMOVATE12 != "Ikke sikker/Ubesvart") %>%
+  mutate(n = (n/sum(n)))
+
+R1DEMOVATE12$R1DEMOVATE12 <- str_remove(R1DEMOVATE12$R1DEMOVATE12, " - Venstre")
+R1DEMOVATE12$R1DEMOVATE12 <- str_remove(R1DEMOVATE12$R1DEMOVATE12, " - Høyre")
+
+R1DEMOVATE12$Order <- NA 
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "0",  "Order"] <- 1
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "1",  "Order"] <- 2
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "2",  "Order"] <- 3
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "3",  "Order"] <- 4
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "4",  "Order"] <- 5
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "5",  "Order"] <- 6
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "6",  "Order"] <- 7
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "7",  "Order"] <- 8
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "8",  "Order"] <- 9
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "9",  "Order"] <- 10
+R1DEMOVATE12[R1DEMOVATE12$R1DEMOVATE12 == "10", "Order"] <- 11
+
+R1DEMOVATE12 %>%
+  
+  # Geometries and aesthetics:
+  ggplot(aes(x = reorder(R1DEMOVATE12, Order), y = n, fill = R1DEMOVATE12)) +
+  geom_col() + 
+  
+  # Axis:
+  # +1 added to geom_vline cause x-axis is a factor
+  scale_y_continuous(breaks = c(0.02, 0.04, 0.06, 0.08, 0.1, 
+                                0.12, 0.14, 0.16, 0.18, 0.2, 
+                                0.22, 0.24, 0.26),
+                     labels = scales::percent_format(accuracy = 1)) +
+  geom_vline(xintercept = (4.970421+1), linetype = "dashed", color = "red", size = 1.2) + 
+  annotate("text", x = 1.5, y = 0.19, size = 5, color = "red", label = "Snitt = 4.97") +
+  labs(x = "\n0 = Venstresiden       10 = Høyresiden", 
+       y = "Andel", 
+       title = "Politisk ideologi") +
+  
+  # Formating:
+  theme(legend.position = "none")
+
+R1DEMOVATE12$Order <- NULL
+
+rm(R1DEMOVATE12)
+```
+
+**Fordeling:**
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE12 <- d_factored %>% 
+  group_by(R1DEMOVATE12) %>% 
+  count(R1DEMOVATE12) %>% 
+  ungroup() %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE12 %>%
+  kable(col.names = c("Verdi", "Antall"), caption = "Politisk ideologi") %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE12)
+```
+
+## Partisympatier - Valg i morgen
+*R1DEMOVATE13* og *o_R1DEMOVATE13*
+
+> Dersom det var kommunevalg i morgen, hvilket parti ville du da ha stemt på?
+
+```{r Valg i morgen, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE13 <- d_factored %>% 
+  group_by(R1DEMOVATE13) %>% 
+  count(R1DEMOVATE13) %>% 
+  ungroup() 
+
+R1DEMOVATE13 %>%
+  ggplot(aes(x = fct_rev(as.factor(R1DEMOVATE13)), y = n, fill = R1DEMOVATE13)) +
+  geom_col() + 
+  labs(x = "Politisk parti", y = "Antall", title = "Partitilhørighet", subtitle = "Hva ville du stemt dersom det var stortingsvalg i morgen?") +
+  theme(legend.position = "none") + 
+  coord_flip()
+
+rm(R1DEMOVATE13)
+```
+
+**Fordeling:**
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE13 <- d_factored %>% 
+  group_by(R1DEMOVATE13) %>% 
+  count(R1DEMOVATE13) %>% 
+  ungroup() %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE13 %>%
+  kable(col.names = c("Verdi", "Antall"), caption = "Dersom det var valg i morgen [...]") %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE13)
+```
+
+### Utvalg sammenliknet med valgresultatet i 2017:
+
+```{r Valg i morgen vs 2017, echo = FALSE, warning = FALSE, message = FALSE}
+library(data.table)
+R1DEMOVATE13 <- d_factored %>% 
+  group_by(R1DEMOVATE13) %>% 
+  count(R1DEMOVATE13) %>% 
+  ungroup() 
+
+R1DEMOVATE13$Valg17 <- NA 
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Rødt",  "Valg17"] <- 2.4
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "SV (Sosialistisk Venstreparti)",  "Valg17"] <- 6.0
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Arbeiderpartiet",  "Valg17"] <- 27.4
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Senterpartiet",  "Valg17"] <- 10.3
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Miljøpartiet De Grønne",  "Valg17"] <- 3.2
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Venstre",  "Valg17"] <- 4.4
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "KrF (Kristelig Folkeparti)",  "Valg17"] <- 4.2
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Høyre",  "Valg17"] <- 25.0
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Frp (Fremskrittspartiet)",  "Valg17"] <- 15.2
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Folkeaksjonen Nei til mer bompenger (FNB)",  "Valg17"] <- 0
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Partiet De Kristne", "Valg17"] <- 0.3
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Demokratene i Norge", "Valg17"] <- 0.1
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Pensjonistpartiet", "Valg17"] <- 0.4
+
+df1 <- R1DEMOVATE13 %>%
+  filter(R1DEMOVATE13 != "Vil ikke si",
+         R1DEMOVATE13 != "Ikke sikker",
+         R1DEMOVATE13 != "Vil ikke stemme /Vil stemme blankt",
+         R1DEMOVATE13 != "Andre") %>%
+  mutate(Utvalg = (n / 746) * 100)
+
+df2 <- melt(df1, id.vars='R1DEMOVATE13') %>%
+        filter(variable != "n", variable != "Order")
+
+df2 %>%        
+  ggplot(aes(x = R1DEMOVATE13, y = value, fill = variable)) +
+  geom_col(stat = "identity", position = "dodge", alpha = 0.9) + 
+  labs(x = "Politisk parti", y = "Stemmeandel", title = "Partitilhørighet", subtitle = "Valgresultat 2017 vs. Hva surveyutvalget ville stemt\ndersom det var stortingsvalg i morgen") +
+  scale_fill_manual(values = c("#ec7373","#9399ff"), name = "Variabel") +
+  #theme(legend.position = "none") + 
+  coord_flip()
+
+R1DEMOVATE13$Valg17 <- NULL
+
+rm(df1, df2, R1DEMOVATE13)
+```
+
+## Partisympatier - Sist stortingsvalg
+*R1DEMOVATE14* og *o_R1DEMOVATE14*
+
+> Stemte du ved Stortingsvalget i 2017? I tilfelle, hvilket parti stemte du på da?
+
+```{r Sist stortingsvalg, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE14 <- d_factored %>% 
+  group_by(R1DEMOVATE14) %>% 
+  count(R1DEMOVATE14) %>% 
+  ungroup() 
+
+R1DEMOVATE14$Order <- NA 
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Rødt",  "Order"] <- 1
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "SV (Sosialistisk Venstreparti)",  "Order"] <- 2
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Arbeiderpartiet",  "Order"] <- 3
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Senterpartiet",  "Order"] <- 4
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Miljøpartiet De Grønne",  "Order"] <- 5
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Venstre",  "Order"] <- 6
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "KrF (Kristelig Folkeparti)",  "Order"] <- 7
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Høyre",  "Order"] <- 8
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Frp (Fremskrittspartiet)",  "Order"] <- 9
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Folkeaksjonen Nei til mer bompenger (FNB)",  "Order"] <- 10
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Partiet De Kristne", "Order"] <- 11
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Demokratene i Norge", "Order"] <- 12
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Pensjonistpartiet", "Order"] <- 13
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Stemte ikke / stemte blankt", "Order"] <- 14
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Ikke sikker", "Order"] <- 15
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Vil ikke si", "Order"] <- 16
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Hadde ikke stemmerett", "Order"] <- 17
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Andre", "Order"] <- 18
+
+R1DEMOVATE14 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE14, desc(Order)), y = n, fill = R1DEMOVATE14)) +
+  geom_col() + 
+  labs(x = "Politisk parti", y = "Antall", title = "Partitilhørighet", subtitle = "Hva stemte du sist Stortingsvalg?") +
+  theme(legend.position = "none") + 
+  coord_flip()
+
+R1DEMOVATE14$Order <- NULL
+
+rm(R1DEMOVATE14)
+```
+
+**Fordeling:**
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE14 <- d_factored %>% 
+  group_by(R1DEMOVATE14) %>% 
+  count(R1DEMOVATE14) %>% 
+  ungroup() %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE14 %>%
+  kable(col.names = c("Verdi", "Antall"), caption = "Stemte sist stortingsvalg") %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1DEMOVATE14)
+```
+
+### Utvalg sammenliknet med valgresultatet i 2017:
+
+```{r Sist stortingsvalg vs 2017, echo = FALSE, warning = FALSE, message = FALSE}
+library(data.table)
+R1DEMOVATE14 <- d_factored %>% 
+  group_by(R1DEMOVATE14) %>% 
+  count(R1DEMOVATE14) %>% 
+  ungroup() 
+
+R1DEMOVATE14$Valg17 <- NA 
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Rødt",  "Valg17"] <- 2.4
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "SV (Sosialistisk Venstreparti)",  "Valg17"] <- 6.0
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Arbeiderpartiet",  "Valg17"] <- 27.4
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Senterpartiet",  "Valg17"] <- 10.3
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Miljøpartiet De Grønne",  "Valg17"] <- 3.2
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Venstre",  "Valg17"] <- 4.4
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "KrF (Kristelig Folkeparti)",  "Valg17"] <- 4.2
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Høyre",  "Valg17"] <- 25.0
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Frp (Fremskrittspartiet)",  "Valg17"] <- 15.2
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Folkeaksjonen Nei til mer bompenger (FNB)",  "Valg17"] <- 0
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Partiet De Kristne", "Valg17"] <- 0.3
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Demokratene i Norge", "Valg17"] <- 0.1
+R1DEMOVATE14[R1DEMOVATE14$R1DEMOVATE14 == "Pensjonistpartiet", "Valg17"] <- 0.4
+
+df1 <- R1DEMOVATE14 %>%
+  filter(R1DEMOVATE14 != "Vil ikke si",
+         R1DEMOVATE14 != "Ikke sikker",
+         R1DEMOVATE14 != "Stemte ikke / stemte blankt",
+         R1DEMOVATE14 != "Andre",
+         R1DEMOVATE14 != "Hadde ikke stemmerett") %>%
+  mutate(Utvalg = (n / 750) * 100)
+
+df2 <- melt(df1, id.vars='R1DEMOVATE14') %>%
+        filter(variable != "n", variable != "Order")
+
+df2 %>%        
+  ggplot(aes(x = R1DEMOVATE14, y = value, fill = variable)) +
+  geom_col(stat = "identity", position = "dodge", alpha = 0.9) + 
+  labs(x = "Politisk parti", y = "Stemmeandel", title = "Partitilhørighet", subtitle = "Valgresultat 2017 vs. Hva surveyutvalget stemte sist stortingsvalg") +
+  scale_fill_manual(values = c("#ec7373","#9399ff"), name = "Variabel") +
+  #theme(legend.position = "none") + 
+  coord_flip()
+
+R1DEMOVATE14$Valg17 <- NULL
+
+rm(R1DEMOVATE14, df1, df2)
+```
+
+
+## Viktigste politiske sak
+*R1DEMOVATE20_x*
+
+> På en skala fra 0 til 10, der 0 er svært lite viktig, og 10 er svært viktig, hvor viktig vil du si at følgende saker var for velgernes stemmegivning ved kommunevalget i din kommune?
+
+- R1DEMOVATE20_1: Skole og barnehage
+- R1DEMOVATE20_2: Eldreomsorg
+- R1DEMOVATE20_3: Bompenger
+- R1DEMOVATE20_4: Eiendomsskatt
+- R1DEMOVATE20_5: Kultur/idrett
+- R1DEMOVATE20_6: Miljø/klima
+- R1DEMOVATE20_7: Kollektivtilbud
+- R1DEMOVATE20_8: Sammenslåing av fylkeskommuner
+- R1DEMOVATE20_9: Innvandring
+- R1DEMOVATE20_10: Boligbygging og arealutnyttelse
+
+**Deskriptiv statistikk:**
+
+```{r Viktigste politiske sak 1, echo = FALSE, eval= FALSE, error = FALSE, warning = FALSE, message = FALSE}
+# Skal ikke vises:
+d_factored %>%
+  select(IntervjuID, R1DEMOVATE20_1, R1DEMOVATE20_2, R1DEMOVATE20_3, R1DEMOVATE20_4, R1DEMOVATE20_5, R1DEMOVATE20_6, R1DEMOVATE20_7, R1DEMOVATE20_7, R1DEMOVATE20_8, R1DEMOVATE20_9, R1DEMOVATE20_10) %>%
+  filter(R1DEMOVATE20_1  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_2  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_3  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_4  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_5  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_6  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_7  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_8  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_9  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_10 != "Ikke sikker/Ubesvart") %>%
+  mutate(R1DEMOVATE20_1  = str_remove(R1DEMOVATE20_1, " - Svært lite viktig"),
+         R1DEMOVATE20_1  = str_remove(R1DEMOVATE20_1, " - Svært viktig"),
+         R1DEMOVATE20_2  = str_remove(R1DEMOVATE20_2, " - Svært lite viktig"),
+         R1DEMOVATE20_2  = str_remove(R1DEMOVATE20_2, " - Svært viktig"),
+         R1DEMOVATE20_3  = str_remove(R1DEMOVATE20_3, " - Svært lite viktig"),
+         R1DEMOVATE20_3  = str_remove(R1DEMOVATE20_3, " - Svært viktig"),
+         R1DEMOVATE20_4  = str_remove(R1DEMOVATE20_4, " - Svært lite viktig"),
+         R1DEMOVATE20_4  = str_remove(R1DEMOVATE20_4, " - Svært viktig"),
+         R1DEMOVATE20_5  = str_remove(R1DEMOVATE20_5, " - Svært lite viktig"),
+         R1DEMOVATE20_5  = str_remove(R1DEMOVATE20_5, " - Svært viktig"),
+         R1DEMOVATE20_6  = str_remove(R1DEMOVATE20_6, " - Svært lite viktig"),
+         R1DEMOVATE20_6  = str_remove(R1DEMOVATE20_6, " - Svært viktig"),
+         R1DEMOVATE20_7  = str_remove(R1DEMOVATE20_7, " - Svært lite viktig"),
+         R1DEMOVATE20_7  = str_remove(R1DEMOVATE20_7, " - Svært viktig"),
+         R1DEMOVATE20_8  = str_remove(R1DEMOVATE20_8, " - Svært lite viktig"),
+         R1DEMOVATE20_8  = str_remove(R1DEMOVATE20_8, " - Svært viktig"),
+         R1DEMOVATE20_9  = str_remove(R1DEMOVATE20_9, " - Svært lite viktig"),
+         R1DEMOVATE20_9  = str_remove(R1DEMOVATE20_9, " - Svært viktig"),
+         R1DEMOVATE20_10 = str_remove(R1DEMOVATE20_10, " - Svært lite viktig"),
+         R1DEMOVATE20_10 = str_remove(R1DEMOVATE20_10, " - Svært viktig"),
+         R1DEMOVATE20_1 = as.numeric(R1DEMOVATE20_1),
+         R1DEMOVATE20_2 = as.numeric(R1DEMOVATE20_2),
+         R1DEMOVATE20_3 = as.numeric(R1DEMOVATE20_3),
+         R1DEMOVATE20_4 = as.numeric(R1DEMOVATE20_4),
+         R1DEMOVATE20_5 = as.numeric(R1DEMOVATE20_5),
+         R1DEMOVATE20_6 = as.numeric(R1DEMOVATE20_6),
+         R1DEMOVATE20_7 = as.numeric(R1DEMOVATE20_7),
+         R1DEMOVATE20_8 = as.numeric(R1DEMOVATE20_8),
+         R1DEMOVATE20_9 = as.numeric(R1DEMOVATE20_9),
+         R1DEMOVATE20_10 = as.numeric(R1DEMOVATE20_10)) -> R1D20
+
+
+# d1 %>%  summary()
+#sd(d1$R1DEMOVATE20_10)
+```  
+
+
+```{r Viktigste politiske sak stats, echo = FALSE, warning = FALSE, message = FALSE}
+
+Variabel <- c("Skole / Barnehage", "Eldreomsorg", "Bompenger", "Eiendomsskatt", "Kultur / Idrett",
+              "Miljø / Klima", "Kollektiv", "Fylkessammenslåing", "Innvandring", "Boligbygging og arealutnyttelse")
+Min       <- c(0,    0,    0,    0,    0,    0,    0,    0,    0,    0)
+Max       <- c(10,   10,   10,   10,   10,   10,   10,   10,   10,   10)
+Median    <- c(7,    7,    8,    5,    5,    7,    7,    4,    5,    5)
+Snitt     <- c(6.82, 6.63, 7.00, 5.50, 5.43, 6.95, 7.08, 4.34, 5.16, 5.50)
+Std.avvik <- c(2.07, 2.21, 2.99, 2.53, 2.24, 2.12, 2.05, 2.67, 2.30, 2.10)
+Total     <- c(882,  877,  884,  871,  880,  888,  883,  866,  874,  871)
+
+R1D20_sum <- data.frame(Variabel,Min,Max,Median,Snitt,Std.avvik,Total)
+R1D20_sum %>%
+  kable() %>%
+  kable_styling(full_width = FALSE, position = "center")
+
+rm(R1D20, R1D20_sum, Max, Median, Min, Snitt, Std.avvik, Total, Variabel)
+```
+
+
+
+```{r VPS wrangling, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE20_1  <- d_factored %>% group_by(R1DEMOVATE20_1)  %>% count(R1DEMOVATE20_1)
+R1DEMOVATE20_2  <- d_factored %>% group_by(R1DEMOVATE20_2)  %>% count(R1DEMOVATE20_2)
+R1DEMOVATE20_3  <- d_factored %>% group_by(R1DEMOVATE20_3)  %>% count(R1DEMOVATE20_3)
+R1DEMOVATE20_4  <- d_factored %>% group_by(R1DEMOVATE20_4)  %>% count(R1DEMOVATE20_4)
+R1DEMOVATE20_5  <- d_factored %>% group_by(R1DEMOVATE20_5)  %>% count(R1DEMOVATE20_5)
+R1DEMOVATE20_6  <- d_factored %>% group_by(R1DEMOVATE20_6)  %>% count(R1DEMOVATE20_6)
+R1DEMOVATE20_7  <- d_factored %>% group_by(R1DEMOVATE20_7)  %>% count(R1DEMOVATE20_7)
+R1DEMOVATE20_8  <- d_factored %>% group_by(R1DEMOVATE20_8)  %>% count(R1DEMOVATE20_8) 
+R1DEMOVATE20_9  <- d_factored %>% group_by(R1DEMOVATE20_9)  %>% count(R1DEMOVATE20_9)  
+R1DEMOVATE20_10 <- d_factored %>% group_by(R1DEMOVATE20_10) %>% count(R1DEMOVATE20_10)
+
+R1DEMOVATE20_a <- merge(R1DEMOVATE20_1, R1DEMOVATE20_2, by.x="R1DEMOVATE20_1", by.y="R1DEMOVATE20_2", sort = F)
+R1DEMOVATE20_b <- merge(R1DEMOVATE20_3, R1DEMOVATE20_4, by.x="R1DEMOVATE20_3", by.y="R1DEMOVATE20_4", sort = F)
+R1DEMOVATE20_c <- merge(R1DEMOVATE20_5, R1DEMOVATE20_6, by.x="R1DEMOVATE20_5", by.y="R1DEMOVATE20_6", sort = F)
+R1DEMOVATE20_d <- merge(R1DEMOVATE20_7, R1DEMOVATE20_8, by.x="R1DEMOVATE20_7", by.y="R1DEMOVATE20_8", sort = F)
+R1DEMOVATE20_e <- merge(R1DEMOVATE20_9, R1DEMOVATE20_10, by.x="R1DEMOVATE20_9", by.y="R1DEMOVATE20_10", sort = F)
+
+colnames(R1DEMOVATE20_a) <- c("Verdi", "Skole/bhg", "Eldreomsorg")
+colnames(R1DEMOVATE20_b) <- c("Verdi", "Bompenger", "Eiendomsskatt")
+colnames(R1DEMOVATE20_c) <- c("Verdi", "Kultur/Idrett", "Miljø/klima")
+colnames(R1DEMOVATE20_d) <- c("Verdi", "Kollektiv", "Regionreform")
+colnames(R1DEMOVATE20_e) <- c("Verdi", "Innvandring", "Byutvikling")
+
+R1DEMOVATE20_f <- merge(R1DEMOVATE20_a, R1DEMOVATE20_b, by.x="Verdi", by.y="Verdi", sort = F)
+R1DEMOVATE20_g <- merge(R1DEMOVATE20_f, R1DEMOVATE20_c, by.x="Verdi", by.y="Verdi", sort = F)
+R1DEMOVATE20_h <- merge(R1DEMOVATE20_g, R1DEMOVATE20_d, by.x="Verdi", by.y="Verdi", sort = F)
+R1DEMOVATE20_i <- merge(R1DEMOVATE20_h, R1DEMOVATE20_e, by.x="Verdi", by.y="Verdi", sort = F)
+
+R1DEMOVATE20_j <- R1DEMOVATE20_i %>%
+  ungroup() %>%
+  mutate(Verdi = na_if(Verdi, "Ikke sikker/Ubesvart")) %>%
+  filter(!is.na(Verdi))
+
+R1DEMOVATE20_i <- R1DEMOVATE20_i %>%
+  ungroup() %>%
+  mutate(Verdi = na_if(Verdi, "Ikke sikker/Ubesvart")) %>%
+  filter(!is.na(Verdi)) %>%
+  adorn_totals("row", na.rm = F)
+```
+
+
+```{r VPS wrangling 2, echo = FALSE, warning = FALSE, message = FALSE}
+library(data.table)
+R1DEMOVATE20_k <- R1DEMOVATE20_j %>% melt(id.vars='Verdi')
+
+R1DEMOVATE20_k$Verdi <- str_remove(R1DEMOVATE20_k$Verdi, " - Svært lite viktig")
+R1DEMOVATE20_k$Verdi <- str_remove(R1DEMOVATE20_k$Verdi, " - Svært viktig")
+
+R1DEMOVATE20_k$Order <- NA 
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "0",  "Order"] <- 1
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "1",  "Order"] <- 2
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "2",  "Order"] <- 3
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "3",  "Order"] <- 4
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "4",  "Order"] <- 5
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "5",  "Order"] <- 6
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "6",  "Order"] <- 7
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "7",  "Order"] <- 8
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "8",  "Order"] <- 9
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "9",  "Order"] <- 10
+R1DEMOVATE20_k[R1DEMOVATE20_k$Verdi == "10", "Order"] <- 11
+
+rm(R1DEMOVATE1,    R1DEMOVATE2,     R1DEMOVATE3,    R1DEMOVATE4,    R1DEMOVATE5,   
+   R1DEMOVATE8,    R1DEMOVATE9,     R1DEMOVATE10,   R1DEMOVATE11,   R1DEMOVATE12, 
+   R1DEMOVATE13,   R1DEMOVATE14,    R1DEMOVATE23,
+   R1DEMOVATE20_1, R1DEMOVATE20_2,  R1DEMOVATE20_3, R1DEMOVATE20_4, R1DEMOVATE20_5, 
+   R1DEMOVATE20_6, R1DEMOVATE20_7,  R1DEMOVATE20_8, R1DEMOVATE20_9, R1DEMOVATE20_10,
+   R1DEMOVATE20_a, R1DEMOVATE20_b,  R1DEMOVATE20_c, R1DEMOVATE20_d, R1DEMOVATE20_e, 
+   R1DEMOVATE20_f, R1DEMOVATE20_g,  R1DEMOVATE20_h,
+   R1DEMOVATE20_j)
+```
+
+
+
+**Subjektiv oppfatning av politiske sakers viktighet:**
+
+```{r Viktigste politiske sak 2, echo = FALSE, warning = FALSE, message = FALSE}
+# Processing:
+d_factored %>%
+  select(IntervjuID, R1DEMOVATE20_1, R1DEMOVATE20_2, R1DEMOVATE20_3, R1DEMOVATE20_4, R1DEMOVATE20_5, R1DEMOVATE20_6, R1DEMOVATE20_7, R1DEMOVATE20_7, R1DEMOVATE20_8, R1DEMOVATE20_9, R1DEMOVATE20_10) %>%
+  filter(R1DEMOVATE20_1  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_2  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_3  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_4  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_5  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_6  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_7  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_8  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_9  != "Ikke sikker/Ubesvart",
+         R1DEMOVATE20_10 != "Ikke sikker/Ubesvart") %>%
+  mutate(R1DEMOVATE20_1  = str_remove(R1DEMOVATE20_1, " - Svært lite viktig"),
+         R1DEMOVATE20_1  = str_remove(R1DEMOVATE20_1, " - Svært viktig"),
+         R1DEMOVATE20_2  = str_remove(R1DEMOVATE20_2, " - Svært lite viktig"),
+         R1DEMOVATE20_2  = str_remove(R1DEMOVATE20_2, " - Svært viktig"),
+         R1DEMOVATE20_3  = str_remove(R1DEMOVATE20_3, " - Svært lite viktig"),
+         R1DEMOVATE20_3  = str_remove(R1DEMOVATE20_3, " - Svært viktig"),
+         R1DEMOVATE20_4  = str_remove(R1DEMOVATE20_4, " - Svært lite viktig"),
+         R1DEMOVATE20_4  = str_remove(R1DEMOVATE20_4, " - Svært viktig"),
+         R1DEMOVATE20_5  = str_remove(R1DEMOVATE20_5, " - Svært lite viktig"),
+         R1DEMOVATE20_5  = str_remove(R1DEMOVATE20_5, " - Svært viktig"),
+         R1DEMOVATE20_6  = str_remove(R1DEMOVATE20_6, " - Svært lite viktig"),
+         R1DEMOVATE20_6  = str_remove(R1DEMOVATE20_6, " - Svært viktig"),
+         R1DEMOVATE20_7  = str_remove(R1DEMOVATE20_7, " - Svært lite viktig"),
+         R1DEMOVATE20_7  = str_remove(R1DEMOVATE20_7, " - Svært viktig"),
+         R1DEMOVATE20_8  = str_remove(R1DEMOVATE20_8, " - Svært lite viktig"),
+         R1DEMOVATE20_8  = str_remove(R1DEMOVATE20_8, " - Svært viktig"),
+         R1DEMOVATE20_9  = str_remove(R1DEMOVATE20_9, " - Svært lite viktig"),
+         R1DEMOVATE20_9  = str_remove(R1DEMOVATE20_9, " - Svært viktig"),
+         R1DEMOVATE20_10 = str_remove(R1DEMOVATE20_10, " - Svært lite viktig"),
+         R1DEMOVATE20_10 = str_remove(R1DEMOVATE20_10, " - Svært viktig"),
+         R1DEMOVATE20_1 = as.numeric(R1DEMOVATE20_1),
+         R1DEMOVATE20_2 = as.numeric(R1DEMOVATE20_2),
+         R1DEMOVATE20_3 = as.numeric(R1DEMOVATE20_3),
+         R1DEMOVATE20_4 = as.numeric(R1DEMOVATE20_4),
+         R1DEMOVATE20_5 = as.numeric(R1DEMOVATE20_5),
+         R1DEMOVATE20_6 = as.numeric(R1DEMOVATE20_6),
+         R1DEMOVATE20_7 = as.numeric(R1DEMOVATE20_7),
+         R1DEMOVATE20_8 = as.numeric(R1DEMOVATE20_8),
+         R1DEMOVATE20_9 = as.numeric(R1DEMOVATE20_9),
+         R1DEMOVATE20_10 = as.numeric(R1DEMOVATE20_10)) -> d1
+
+# Count:
+R1DEMOVATE20_1  <- d1 %>% group_by(R1DEMOVATE20_1)  %>% count(R1DEMOVATE20_1) %>% ungroup()
+R1DEMOVATE20_2  <- d1 %>% group_by(R1DEMOVATE20_2)  %>% count(R1DEMOVATE20_2) %>% ungroup()
+R1DEMOVATE20_3  <- d1 %>% group_by(R1DEMOVATE20_3)  %>% count(R1DEMOVATE20_3) %>% ungroup()
+R1DEMOVATE20_4  <- d1 %>% group_by(R1DEMOVATE20_4)  %>% count(R1DEMOVATE20_4) %>% ungroup()
+R1DEMOVATE20_5  <- d1 %>% group_by(R1DEMOVATE20_5)  %>% count(R1DEMOVATE20_5) %>% ungroup()
+R1DEMOVATE20_6  <- d1 %>% group_by(R1DEMOVATE20_6)  %>% count(R1DEMOVATE20_6) %>% ungroup()
+R1DEMOVATE20_7  <- d1 %>% group_by(R1DEMOVATE20_7)  %>% count(R1DEMOVATE20_7) %>% ungroup()
+R1DEMOVATE20_8  <- d1 %>% group_by(R1DEMOVATE20_8)  %>% count(R1DEMOVATE20_8) %>% ungroup()
+R1DEMOVATE20_9  <- d1 %>% group_by(R1DEMOVATE20_9)  %>% count(R1DEMOVATE20_9) %>% ungroup()
+R1DEMOVATE20_10 <- d1 %>% group_by(R1DEMOVATE20_10) %>% count(R1DEMOVATE20_10) %>% ungroup()
+
+# Variabelnavn:
+colnames(R1DEMOVATE20_1) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE20_2) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE20_3) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE20_4) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE20_5) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE20_6) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE20_7) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE20_8) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE20_9) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE20_10) <- c("Verdi", "Antall")
+
+# Lage ny variabel:
+R1DEMOVATE20_1 <- R1DEMOVATE20_1   %>% mutate(Variabel = "R1DEMOVATE20_1")
+R1DEMOVATE20_2 <- R1DEMOVATE20_2   %>% mutate(Variabel = "R1DEMOVATE20_2")
+R1DEMOVATE20_3 <- R1DEMOVATE20_3   %>% mutate(Variabel = "R1DEMOVATE20_3")
+R1DEMOVATE20_4 <- R1DEMOVATE20_4   %>% mutate(Variabel = "R1DEMOVATE20_4")
+R1DEMOVATE20_5 <- R1DEMOVATE20_5   %>% mutate(Variabel = "R1DEMOVATE20_5")
+R1DEMOVATE20_6 <- R1DEMOVATE20_6   %>% mutate(Variabel = "R1DEMOVATE20_6")
+R1DEMOVATE20_7 <- R1DEMOVATE20_7   %>% mutate(Variabel = "R1DEMOVATE20_7")
+R1DEMOVATE20_8 <- R1DEMOVATE20_8   %>% mutate(Variabel = "R1DEMOVATE20_8")
+R1DEMOVATE20_9 <- R1DEMOVATE20_9   %>% mutate(Variabel = "R1DEMOVATE20_9")
+R1DEMOVATE20_10 <- R1DEMOVATE20_10 %>% mutate(Variabel = "R1DEMOVATE20_10")
+
+# Long format:
+d1 <- rbind(      R1DEMOVATE20_1, 
+                  R1DEMOVATE20_2, 
+                  R1DEMOVATE20_3, 
+                  R1DEMOVATE20_4, 
+                  R1DEMOVATE20_5,
+                  R1DEMOVATE20_6,
+                  R1DEMOVATE20_7,
+                  R1DEMOVATE20_8,
+                  R1DEMOVATE20_9,
+                  R1DEMOVATE20_10)
+
+# Levels:
+d1$Variabel <- factor(d1$Variabel, 
+                      levels = c("R1DEMOVATE20_1", "R1DEMOVATE20_2", "R1DEMOVATE20_3", "R1DEMOVATE20_4", "R1DEMOVATE20_5",
+                                 "R1DEMOVATE20_6", "R1DEMOVATE20_7", "R1DEMOVATE20_8", "R1DEMOVATE20_9", "R1DEMOVATE20_10"), 
+                      labels = c("Skole / Barnehage", "Eldreomsorg", "Bompenger", "Eiendomsskatt", "Kultur / Idrett",
+                                 "Miljø / Klima", "Kollektivtransport", "Regionreform", "Innvandring", "Bolig & arealutn."))
+
+d1 %>% 
+  ggplot(aes(x = factor(Verdi), y = Antall, group = Variabel, color = Variabel)) +
+  geom_line(size = 0.9, alpha = 0.8) +
+  geom_point(size = 2.5, alpha = 0.8) +
+  facet_wrap(~ Variabel, ncol = 5) +
+  labs(x = "Verdi", y = "Antall", title = "Politisk sak", subtitle = "På en skala fra 0 til 10, hvor viktig vil du si at følgende saker\nvar for velgernes stemmegivning ved kommunevalget i din kommune", caption = "0 = Svært lite viktig, 10 = Svært viktig") +
+  theme(legend.position = "none")
+```
+
+
+```{r del1000, echo = FALSE, error = FALSE, warning = FALSE, message = FALSE}
+rm(R1DEMOVATE20_1, R1DEMOVATE20_2, R1DEMOVATE20_3, R1DEMOVATE20_4, R1DEMOVATE20_5, 
+   R1DEMOVATE20_6, R1DEMOVATE20_7, R1DEMOVATE20_8, R1DEMOVATE20_9, R1DEMOVATE20_10,
+   d1)
+```
+
+
+**Stolpediagram:**
+
+```{r VPS ggplot, echo = FALSE, warning = FALSE, message = FALSE, fig.height= 12}
+R1DEMOVATE20_k %>%
+  ggplot(aes(x = reorder(Verdi, Order), y = value, fill = variable)) +
+  geom_col() + 
+  facet_wrap(~ variable, ncol = 2) +
+  labs(x = "\n0 = Svært lite viktig       10 = Svært viktig", y = "Antall", title = "Viktigste politiske sak") +
+  theme(legend.position = "none")
+```
+
+**Fordeling:**
+```{r VPS tabell, echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE20_i %>% 
+  kable(caption = "R1DEMOVATE20") %>%
+  kable_styling(full_width = FALSE, position = "left") %>%
+  scroll_box(width = "100%", box_css = "border: 0px;")
+
+rm(R1DEMOVATE20_i, R1DEMOVATE20_k)
+```
+
+
+```{r include=FALSE, cache=FALSE}
+```
+
+<!--chapter:end:02-skalaspm.Rmd-->
+
+```{r include=FALSE, cache=FALSE}
+```
+# Surveyeksperimenter
+
+```{r surveyexp frontmatter, echo = FALSE, message = FALSE, warning = FALSE}
+library(kableExtra)
+library(tidyverse)
+library(cregg)
+```
+
+
+Under følger oversikt over undersøkelsens conjoint-eksperimenter - *R1DEMOVATE6* og *R1DEMOVATE7*. Utvalget blir delt i to hvor halvparten svarer på første eksperiment og andre halvpart svarer på andre eksperiment. Introtekst leses kun opp én gang. For hver respondent skal !Variabelnavn erstattes med tilfeldig uttrukne verdier fra tabellen nedenfor. Variabellisten, med tilfeldig uttrukne verdier, og spørsmålet skal repeteres tre ganger slik at hver respondent oppgir sannsynligheten for å delta i tre ulike variater av Byborgerpanelet.
+
+Under har jeg angitt fordelingen på de to forskjellige eksperimentene, hvor 1 = Eksperiment 1 (R1DEMOVATE6) og hvor 2 = Eksperiment 2 (R1DEMOVATE7).
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+Alternativ <- d_factored %>% 
+  group_by(Alternativ)  %>% 
+  count(Alternativ) %>% 
+  adorn_totals("row", na.rm = F)
+
+Alternativ %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+## Eksperiment 1
+*R1DEMOVATE6*
+
+> Bergen kommune har bestemt seg for å gjennomføre såkalte borgerpaneler i tiden framover. Dette er en ordning hvor en gruppe innbyggere i kommunen blir invitert til å diskutere og gjøre seg opp en mening om en politisk sak. Jeg skal lese opp noen måter dette borgerpanelet kan gjennomføres på, og vil gjerne vite hvor sannsynlig det er at _du ville ha deltatt_ om det ble gjennomført slik jeg beskriver. Her kommer den første måten:
+
+Byborgerpanelet består av **!Deltakerantall** deltakere,   
+finner sted i Bergen sentrum på en **!Dag**, og varer i 7 timer.   
+Deltakerne blir **!Kompensasjon** for å være med.   
+**!Rekrutteringsform**   
+Saken som skal diskuteres er **!Sak**   
+Deltakerne bestemmer seg ut fra **!Beslutningsgrunnlag**.   
+Deltakerne stemmer så over saken, og resultatet blir formidlet til kommens politikere.   
+**!Offentliggjøring**   
+
+> Hvor mange prosent sannsynlighet er det for at du ville ha deltatt i et slikt borgerpanel?
+
+999 = Ikke sikker/ubesvart
+
+```{r echo = FALSE, warning = FALSE, message = FALSE, caption = "Eksperiment 1: R1DEMOVATE6"}
+Variabel <- c("!Deltakerantall", "!Dag", "!Rekrutteringsform", "!Sak", "!Kompensasjon", "!Beslutningsgrunnlag", "!Offentliggjøring")
+Verdier <- c("[12 / 100 / 300]", "[hverdag / helgedag]", "[Registrering er åpen for alle innbyggerne i kommunen til det er fullt./ Deltakerne trekkes tilfeldig blant alle innbyggerne i kommunen.]", "[boligbygging på Store Lungegårdsvann / tiggerforbud i Bergen / turistskatt]", "[ikke kompensert / kompensert med 200 kroner per time / 500 kroner per time / 1000 kroner per time]", "[egne vurderinger og preferanser / troverdig informasjon fra uavhengige eksperter / meningsutveksling mellom deltakerne i mindre grupper, hvor diskusjonen ledes av uavhengige moderatorer]", "[Hvem som deltok i borgerpanelet og hvordan de stemte vil være offentlig / Hvem som deltok i borgerpanelet og hvordan de stemte vil ikke være offentlig]")
+
+# ----
+
+Exp <- data.frame(Variabel, Verdier)
+
+Exp %>%
+  kable() %>%
+  kable_styling()
+```
+
+### Analyse
+
+Marginal means:
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Dv:
+dv <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_1, R1DEMOVATE6_2, R1DEMOVATE6_3) %>%
+  filter(!is.na(R1DEMOVATE6_1) & !is.na(R1DEMOVATE6_2) & !is.na(R1DEMOVATE6_3)) %>%
+  filter(R1DEMOVATE6_1 != 999, R1DEMOVATE6_2 != 999, R1DEMOVATE6_3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_1, R2 = R1DEMOVATE6_2, R3 = R1DEMOVATE6_3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+#  mutate(Variabel = "dv") %>%
+  rename(Runde = variable, R1DEMOVATE6_dv = value)
+
+# Antall:
+antall <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Antall1, R1DEMOVATE6_Antall2, R1DEMOVATE6_Antall3) %>%
+  filter(!is.na(R1DEMOVATE6_Antall1) & !is.na(R1DEMOVATE6_Antall2) & !is.na(R1DEMOVATE6_Antall3)) %>%
+  filter(R1DEMOVATE6_Antall1 != 999, R1DEMOVATE6_Antall2 != 999, R1DEMOVATE6_Antall3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Antall1, R2 = R1DEMOVATE6_Antall2, R3 = R1DEMOVATE6_Antall3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_antall = value)
+
+# Dag:
+dag <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Dag1, R1DEMOVATE6_Dag2, R1DEMOVATE6_Dag3) %>%
+  filter(!is.na(R1DEMOVATE6_Dag1) & !is.na(R1DEMOVATE6_Dag2) & !is.na(R1DEMOVATE6_Dag3)) %>%
+  filter(R1DEMOVATE6_Dag1 != 999, R1DEMOVATE6_Dag2 != 999, R1DEMOVATE6_Dag3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Dag1, R2 = R1DEMOVATE6_Dag2, R3 = R1DEMOVATE6_Dag3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_dag = value)
+
+# Kompensasjon:
+komp <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Komp1, R1DEMOVATE6_Komp2, R1DEMOVATE6_Komp3) %>%
+  filter(!is.na(R1DEMOVATE6_Komp1) & !is.na(R1DEMOVATE6_Komp2) & !is.na(R1DEMOVATE6_Komp3)) %>%
+  filter(R1DEMOVATE6_Komp1 != 999, R1DEMOVATE6_Komp2 != 999, R1DEMOVATE6_Komp3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Komp1, R2 = R1DEMOVATE6_Komp2, R3 = R1DEMOVATE6_Komp3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_komp = value)
+
+# Rekruttering:
+rekruttering <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Rekr1, R1DEMOVATE6_Rekr2, R1DEMOVATE6_Rekr3) %>%
+  filter(!is.na(R1DEMOVATE6_Rekr1) & !is.na(R1DEMOVATE6_Rekr2) & !is.na(R1DEMOVATE6_Rekr3)) %>%
+  filter(R1DEMOVATE6_Rekr1 != 999, R1DEMOVATE6_Rekr2 != 999, R1DEMOVATE6_Rekr3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Rekr1, R2 = R1DEMOVATE6_Rekr2, R3 = R1DEMOVATE6_Rekr3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_rekruttering = value)
+
+# Sak:
+sak <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Sak1, R1DEMOVATE6_Sak2, R1DEMOVATE6_Sak3) %>%
+  filter(!is.na(R1DEMOVATE6_Sak1) & !is.na(R1DEMOVATE6_Sak2) & !is.na(R1DEMOVATE6_Sak3)) %>%
+  filter(R1DEMOVATE6_Sak1 != 999, R1DEMOVATE6_Sak2 != 999, R1DEMOVATE6_Sak3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Sak1, R2 = R1DEMOVATE6_Sak2, R3 = R1DEMOVATE6_Sak3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_sak = value)
+
+# Grunnlag:
+grunnlag <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Grunnlag1, R1DEMOVATE6_Grunnlag2, R1DEMOVATE6_Grunnlag3) %>%
+  filter(!is.na(R1DEMOVATE6_Grunnlag1) & !is.na(R1DEMOVATE6_Grunnlag2) & !is.na(R1DEMOVATE6_Grunnlag3)) %>%
+  filter(R1DEMOVATE6_Grunnlag1 != 999, R1DEMOVATE6_Grunnlag2 != 999, R1DEMOVATE6_Grunnlag3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Grunnlag1, R2 = R1DEMOVATE6_Grunnlag2, R3 = R1DEMOVATE6_Grunnlag3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_grunnlag = value)
+
+# Offentliggjøring:
+offentlig <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Offentlig1, R1DEMOVATE6_Offentlig2, R1DEMOVATE6_Offentlig3) %>%
+  filter(!is.na(R1DEMOVATE6_Offentlig1) & !is.na(R1DEMOVATE6_Offentlig2) & !is.na(R1DEMOVATE6_Offentlig3)) %>%
+  filter(R1DEMOVATE6_Offentlig1 != 999, R1DEMOVATE6_Offentlig2 != 999, R1DEMOVATE6_Offentlig3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Offentlig1, R2 = R1DEMOVATE6_Offentlig2, R3 = R1DEMOVATE6_Offentlig3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_offentlig = value)
+
+d1 <- left_join(dv, antall,         by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, dag,            by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, komp,           by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, rekruttering,   by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, sak,            by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, grunnlag,       by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, offentlig,      by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+
+
+# Process attributes:
+d1 <- d1 %>%
+  mutate(# Antall:
+         #R1DEMOVATE6_antall = str_replace(R1DEMOVATE6_antall, "12", "12 p"),
+         #R1DEMOVATE6_antall = str_replace(R1DEMOVATE6_antall, "300", "300 p"),
+         #R1DEMOVATE6_antall = str_replace(R1DEMOVATE6_antall, "1000", "1000 p"),
+         
+         # Dag:
+         R1DEMOVATE6_dag = str_replace(R1DEMOVATE6_dag, "hverdag", "Hverdag"),
+         R1DEMOVATE6_dag = str_replace(R1DEMOVATE6_dag, "helgedag", "Helgedag"),
+         
+         # Kompensasjon:
+         R1DEMOVATE6_komp = str_replace(R1DEMOVATE6_komp, "kompensert med 1000 kroner per time", "1000 kr/t"),
+         R1DEMOVATE6_komp = str_replace(R1DEMOVATE6_komp, "kompensert med 500 kroner per time", "500 kr/t"),
+         R1DEMOVATE6_komp = str_replace(R1DEMOVATE6_komp, "kompensert med 200 kroner per time", "200 kr/t"),
+         R1DEMOVATE6_komp = str_replace(R1DEMOVATE6_komp, "ikke kompensert", "Ingen komp."),
+         
+         # Rekruttering:
+         R1DEMOVATE6_rekruttering = str_replace(R1DEMOVATE6_rekruttering, "Deltakerne trekkes tilfeldig blant alle innbyggerne i kommunen", "Tilfeldig utvalg"),
+         R1DEMOVATE6_rekruttering = str_replace(R1DEMOVATE6_rekruttering, "Registrering er åpen for alle innbyggerne i kommunen til det er fullt", "Åpen påmelding"),
+         
+         # Sak:
+         R1DEMOVATE6_sak = str_replace(R1DEMOVATE6_sak, "tiggerforbud i Bergen", "Tiggeforbud"),
+         R1DEMOVATE6_sak = str_replace(R1DEMOVATE6_sak, "boligbygging på Store Lungegårdsvann", "Boligbygging"),
+         R1DEMOVATE6_sak = str_replace(R1DEMOVATE6_sak, "turistskatt", "Turistskatt"),
+         
+         # Beslutningsgrunnlag:
+         R1DEMOVATE6_grunnlag = str_replace(R1DEMOVATE6_grunnlag, "meningsutveksling i mindre grupper, ledet av uavhengige moderatorer", "Moderatorstyrt"),
+         R1DEMOVATE6_grunnlag = str_replace(R1DEMOVATE6_grunnlag, "troverdig informasjon fra uavhengige eksperter", "Troverdig info fra uavh. Eksperter"),
+         R1DEMOVATE6_grunnlag = str_replace(R1DEMOVATE6_grunnlag, "egne vurderinger og preferanser", "Egne vurderinger og preferanser"),
+         
+         # Offentliggjøring:
+         R1DEMOVATE6_offentlig = str_replace(R1DEMOVATE6_offentlig, "Hvem som deltok i borgerpanelet og hvordan de stemte vil ikke være offentlig", "Stemmegivning offentliggjort"),
+         R1DEMOVATE6_offentlig = str_replace(R1DEMOVATE6_offentlig, "Hvem som deltok i borgerpanelet og hvordan de stemte vil være offentlig", "Stemmegivning ikke offentlig"))
+
+
+d1 <- d1 %>% 
+  mutate(Antall = factor(R1DEMOVATE6_antall, levels = c("300", "100", "12")),
+         Dag = factor(R1DEMOVATE6_dag, levels = c("Helgedag", "Hverdag")),
+         Kompensasjon = factor(R1DEMOVATE6_komp, levels = c("1000 kr/t", "500 kr/t", "200 kr/t", "Ingen komp.")), 
+         Rekruttering = factor(R1DEMOVATE6_rekruttering, levels = c("Åpen påmelding", "Tilfeldig utvalg")),
+         Sak = factor(R1DEMOVATE6_sak, levels = c("Tiggeforbud", "Boligbygging", "Turistskatt")),
+         Grunnlag = factor(R1DEMOVATE6_grunnlag, levels = c("Moderatorstyrt", "Troverdig info fra uavh. Eksperter", "Egne vurderinger og preferanser")),
+         Offentlig = factor(R1DEMOVATE6_offentlig, levels = c("Stemmegivning ikke offentlig", "Stemmegivning offentliggjort")))
+
+
+# My model:
+# Skal jeg endre på x-aksen?
+p1 <- R1DEMOVATE6_dv ~ Antall + Dag + Kompensasjon + Rekruttering + Sak + Grunnlag + Offentlig
+plot(mm(d1, p1, id = ~ IntervjuID),
+           size = 2.5,
+           xlab = "Marginal Mean\n(% sannsynlighet for oppmøte hvis borgerpanelet inneholder gitt attributt)",
+           ylab = "Attributt",
+           legend_pos = "none",
+           xlim = c(22,56),
+           vline = c(37.54005))
+
+#mmm <- mm(d1, p1, id = ~ IntervjuID)
+#mean(mmm$estimate)
+```
+
+AMCES:
+
+```{r AMCES, echo = FALSE, warning = FALSE, message = FALSE}
+# estimation
+amces <- cj(d1, p1, id = ~ IntervjuID)
+#head(amces[c("feature", "level", "estimate", "std.error")], 20L)
+plot(amces)
+
+# Delete:
+rm(dv, antall, dag, komp, rekruttering, sak, grunnlag, offentlig, amces, p1, d1)
+```
+
+
+### Respondentfordeling
+
+Variablene *R1DEMOVATE6_1*, *R1DEMOVATE6_2* og *R1DEMOVATE6_3* er eksperimentets avhengige variabel. De andre fordelingene viser hvordan respondentene har blitt fordelt ved bruk av randomisert tildeling av de ulike vignettene.
+
+
+#### R1DEMOVATE6_1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_1 <- d_factored %>% group_by(R1DEMOVATE6_1) %>% count(R1DEMOVATE6_1) %>% adorn_totals("row", na.rm = T)
+R1DEMOVATE6_1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+
+#### R1DEMOVATE6_Antall1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Antall1 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Antall1) %>% 
+  count(R1DEMOVATE6_Antall1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Antall1 = forcats::fct_explicit_na(R1DEMOVATE6_Antall1)) %>%
+  filter(R1DEMOVATE6_Antall1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Antall1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE6_Dag1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Dag1 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Dag1) %>% 
+  count(R1DEMOVATE6_Dag1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Dag1 = forcats::fct_explicit_na(R1DEMOVATE6_Dag1)) %>%
+  filter(R1DEMOVATE6_Dag1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Dag1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE6_Komp1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Komp1 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Komp1) %>% 
+  count(R1DEMOVATE6_Komp1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Komp1 = forcats::fct_explicit_na(R1DEMOVATE6_Komp1)) %>%
+  filter(R1DEMOVATE6_Komp1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Komp1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Rekr1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Rekr1 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Rekr1) %>% 
+  count(R1DEMOVATE6_Rekr1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Rekr1 = forcats::fct_explicit_na(R1DEMOVATE6_Rekr1)) %>%
+  filter(R1DEMOVATE6_Rekr1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Rekr1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Sak1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Sak1 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Sak1) %>% 
+  count(R1DEMOVATE6_Sak1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Sak1 = forcats::fct_explicit_na(R1DEMOVATE6_Sak1)) %>%
+  filter(R1DEMOVATE6_Sak1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Sak1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Grunnlag1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Grunnlag1 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Grunnlag1) %>% 
+  count(R1DEMOVATE6_Grunnlag1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Grunnlag1 = forcats::fct_explicit_na(R1DEMOVATE6_Grunnlag1)) %>%
+  filter(R1DEMOVATE6_Grunnlag1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Grunnlag1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Offentlig1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Offentlig1 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Offentlig1) %>% 
+  count(R1DEMOVATE6_Offentlig1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Offentlig1 = forcats::fct_explicit_na(R1DEMOVATE6_Offentlig1)) %>%
+  filter(R1DEMOVATE6_Offentlig1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Offentlig1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_2 <- d_factored %>% 
+  group_by(R1DEMOVATE6_2) %>% 
+  count(R1DEMOVATE6_2) %>% 
+  ungroup() %>%
+  filter(!is.na(R1DEMOVATE6_2)) %>%
+  filter(R1DEMOVATE6_2 != 999) %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+
+#### R1DEMOVATE6_Antall2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Antall2 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Antall2) %>% 
+  count(R1DEMOVATE6_Antall2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Antall2 = forcats::fct_explicit_na(R1DEMOVATE6_Antall2)) %>%
+  filter(R1DEMOVATE6_Antall2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Antall2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE6_Dag2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Dag2 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Dag2)  %>% 
+  count(R1DEMOVATE6_Dag2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Dag2 = forcats::fct_explicit_na(R1DEMOVATE6_Dag2)) %>%
+  filter(R1DEMOVATE6_Dag2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Dag2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE6_Komp2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Komp2 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Komp2) %>% 
+  count(R1DEMOVATE6_Komp2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Komp2 = forcats::fct_explicit_na(R1DEMOVATE6_Komp2)) %>%
+  filter(R1DEMOVATE6_Komp2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Komp2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Rekr2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Rekr2 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Rekr2) %>% 
+  count(R1DEMOVATE6_Rekr2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Rekr2 = forcats::fct_explicit_na(R1DEMOVATE6_Rekr2)) %>%
+  filter(R1DEMOVATE6_Rekr2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Rekr2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Sak2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Sak2 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Sak2) %>% 
+  count(R1DEMOVATE6_Sak2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Sak2 = forcats::fct_explicit_na(R1DEMOVATE6_Sak2)) %>%
+  filter(R1DEMOVATE6_Sak2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Sak2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Grunnlag2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Grunnlag2 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Grunnlag2) %>% 
+  count(R1DEMOVATE6_Grunnlag2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Grunnlag2 = forcats::fct_explicit_na(R1DEMOVATE6_Grunnlag2)) %>%
+  filter(R1DEMOVATE6_Grunnlag2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Grunnlag2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Offentlig2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Offentlig2 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Offentlig2) %>% 
+  count(R1DEMOVATE6_Offentlig2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Offentlig2 = forcats::fct_explicit_na(R1DEMOVATE6_Offentlig2)) %>%
+  filter(R1DEMOVATE6_Offentlig2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Offentlig2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+# Denne må aggregeres
+R1DEMOVATE6_3 <- d_factored %>% 
+  group_by(R1DEMOVATE6_3) %>% 
+  count(R1DEMOVATE6_3) %>% 
+  filter(R1DEMOVATE6_3 != 999) %>%
+  filter(!is.na(R1DEMOVATE6_3)) %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE6_3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+
+#### R1DEMOVATE6_Antall3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Antall3 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Antall3)  %>% 
+  count(R1DEMOVATE6_Antall3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Antall3 = forcats::fct_explicit_na(R1DEMOVATE6_Antall3)) %>%
+  filter(R1DEMOVATE6_Antall3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE6_Antall3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE6_Dag3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Dag3 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Dag3) %>% 
+  count(R1DEMOVATE6_Dag3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Dag3 = forcats::fct_explicit_na(R1DEMOVATE6_Dag3)) %>%
+  filter(R1DEMOVATE6_Dag3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Dag3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE6_Komp3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Komp3 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Komp3)  %>% 
+  count(R1DEMOVATE6_Komp3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Komp3 = forcats::fct_explicit_na(R1DEMOVATE6_Komp3)) %>%
+  filter(R1DEMOVATE6_Komp3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE6_Komp3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Rekr3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Rekr3 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Rekr3) %>% 
+  count(R1DEMOVATE6_Rekr3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Rekr3 = forcats::fct_explicit_na(R1DEMOVATE6_Rekr3)) %>%
+  filter(R1DEMOVATE6_Rekr3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Rekr3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Sak3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Sak3 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Sak3) %>% 
+  count(R1DEMOVATE6_Sak3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Sak3 = forcats::fct_explicit_na(R1DEMOVATE6_Sak3)) %>%
+  filter(R1DEMOVATE6_Sak3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE6_Sak3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Grunnlag3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Grunnlag3 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Grunnlag3)  %>% 
+  count(R1DEMOVATE6_Grunnlag3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Grunnlag3 = forcats::fct_explicit_na(R1DEMOVATE6_Grunnlag3)) %>%
+  filter(R1DEMOVATE6_Grunnlag3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE6_Grunnlag3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE6_Offentlig3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE6_Offentlig3 <- d_factored %>% 
+  group_by(R1DEMOVATE6_Offentlig3) %>% 
+  count(R1DEMOVATE6_Offentlig3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE6_Offentlig3 = forcats::fct_explicit_na(R1DEMOVATE6_Offentlig3)) %>%
+  filter(R1DEMOVATE6_Offentlig3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE6_Offentlig3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+
+## Eksperiment 2
+*R1DEMOVATE7*
+
+> Bergen kommune har bestemt seg for å gjennomføre såkalte borgerpaneler i tiden framover. Dette er en ordning hvor en gruppe innbyggere i kommunen blir invitert til å diskutere og gjøre seg opp en mening om en politisk sak. Jeg skal lese opp noen måter dette borgerpanelet kan gjennomføres på, og vil gjerne vite _hvor mye vekt politikerne skal legge på resultatet_ om det ble gjennomført slik jeg beskriver:
+
+Byborgerpanelet består av **!Deltakerantall** deltakere,   
+finner sted i Bergen sentrum på en **!Dag**, og varer i 7 timer.   
+Deltakerne blir **!Kompensasjon** for å være med.   
+**!Rekrutteringsform**   
+Saken som skal diskuteres er **!Sak**   
+Deltakerne bestemmer seg ut fra **!Beslutningsgrunnlag**.   
+Deltakerne stemmer så over saken, og resultatet blir formidlet til kommens politikere.   
+**!Offentliggjøring**   
+
+> På en skala fra 0 til 10, der 0 betyr at resultatet ikke skal vektlegges i det hele tatt, og 10 betyr at resultatet skal følges uansett. Hvor mye mener du resultatet fra borgerpanelet skal vektlegges når politikerne skal fatte den endelige beslutningen i saken?
+
+
+```{r echo = FALSE, warning = FALSE, message = FALSE, caption = "Eksperiment 2: R1DEMOVATE7"}
+Exp %>%
+  kable() %>%
+  kable_styling()
+```
+
+### Analyse
+
+Marginal means:
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Dv:
+dv <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE7_1, R1DEMOVATE7_2, R1DEMOVATE7_3) %>%
+  filter(!is.na(R1DEMOVATE7_1) & !is.na(R1DEMOVATE7_2) & !is.na(R1DEMOVATE7_3)) %>%
+  filter(R1DEMOVATE7_1 != 999, R1DEMOVATE7_2 != 999, R1DEMOVATE7_3 != 999) %>%
+  rename(R1 = R1DEMOVATE7_1, R2 = R1DEMOVATE7_2, R3 = R1DEMOVATE7_3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+#  mutate(Variabel = "dv") %>%
+  rename(Runde = variable, R1DEMOVATE7_dv = value)
+
+# Antall:
+antall <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE7_Antall1, R1DEMOVATE7_Antall2, R1DEMOVATE7_Antall3) %>%
+  filter(!is.na(R1DEMOVATE7_Antall1) & !is.na(R1DEMOVATE7_Antall2) & !is.na(R1DEMOVATE7_Antall3)) %>%
+  filter(R1DEMOVATE7_Antall1 != 999, R1DEMOVATE7_Antall2 != 999, R1DEMOVATE7_Antall3 != 999) %>%
+  rename(R1 = R1DEMOVATE7_Antall1, R2 = R1DEMOVATE7_Antall2, R3 = R1DEMOVATE7_Antall3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE7_antall = value)
+
+# Dag:
+dag <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE7_Dag1, R1DEMOVATE7_Dag2, R1DEMOVATE7_Dag3) %>%
+  filter(!is.na(R1DEMOVATE7_Dag1) & !is.na(R1DEMOVATE7_Dag2) & !is.na(R1DEMOVATE7_Dag3)) %>%
+  filter(R1DEMOVATE7_Dag1 != 999, R1DEMOVATE7_Dag2 != 999, R1DEMOVATE7_Dag3 != 999) %>%
+  rename(R1 = R1DEMOVATE7_Dag1, R2 = R1DEMOVATE7_Dag2, R3 = R1DEMOVATE7_Dag3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE7_dag = value)
+
+# Kompensasjon:
+komp <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE7_Komp1, R1DEMOVATE7_Komp2, R1DEMOVATE7_Komp3) %>%
+  filter(!is.na(R1DEMOVATE7_Komp1) & !is.na(R1DEMOVATE7_Komp2) & !is.na(R1DEMOVATE7_Komp3)) %>%
+  filter(R1DEMOVATE7_Komp1 != 999, R1DEMOVATE7_Komp2 != 999, R1DEMOVATE7_Komp3 != 999) %>%
+  rename(R1 = R1DEMOVATE7_Komp1, R2 = R1DEMOVATE7_Komp2, R3 = R1DEMOVATE7_Komp3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE7_komp = value)
+
+# Rekruttering:
+rekruttering <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE7_Rekr1, R1DEMOVATE7_Rekr2, R1DEMOVATE7_Rekr3) %>%
+  filter(!is.na(R1DEMOVATE7_Rekr1) & !is.na(R1DEMOVATE7_Rekr2) & !is.na(R1DEMOVATE7_Rekr3)) %>%
+  filter(R1DEMOVATE7_Rekr1 != 999, R1DEMOVATE7_Rekr2 != 999, R1DEMOVATE7_Rekr3 != 999) %>%
+  rename(R1 = R1DEMOVATE7_Rekr1, R2 = R1DEMOVATE7_Rekr2, R3 = R1DEMOVATE7_Rekr3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE7_rekruttering = value)
+
+# Sak:
+sak <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE7_Sak1, R1DEMOVATE7_Sak2, R1DEMOVATE7_Sak3) %>%
+  filter(!is.na(R1DEMOVATE7_Sak1) & !is.na(R1DEMOVATE7_Sak2) & !is.na(R1DEMOVATE7_Sak3)) %>%
+  filter(R1DEMOVATE7_Sak1 != 999, R1DEMOVATE7_Sak2 != 999, R1DEMOVATE7_Sak3 != 999) %>%
+  rename(R1 = R1DEMOVATE7_Sak1, R2 = R1DEMOVATE7_Sak2, R3 = R1DEMOVATE7_Sak3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE7_sak = value)
+
+# Grunnlag:
+grunnlag <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE7_Grunnlag1, R1DEMOVATE7_Grunnlag2, R1DEMOVATE7_Grunnlag3) %>%
+  filter(!is.na(R1DEMOVATE7_Grunnlag1) & !is.na(R1DEMOVATE7_Grunnlag2) & !is.na(R1DEMOVATE7_Grunnlag3)) %>%
+  filter(R1DEMOVATE7_Grunnlag1 != 999, R1DEMOVATE7_Grunnlag2 != 999, R1DEMOVATE7_Grunnlag3 != 999) %>%
+  rename(R1 = R1DEMOVATE7_Grunnlag1, R2 = R1DEMOVATE7_Grunnlag2, R3 = R1DEMOVATE7_Grunnlag3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE7_grunnlag = value)
+
+# Offentliggjøring:
+offentlig <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE7_Offentlig1, R1DEMOVATE7_Offentlig2, R1DEMOVATE7_Offentlig3) %>%
+  filter(!is.na(R1DEMOVATE7_Offentlig1) & !is.na(R1DEMOVATE7_Offentlig2) & !is.na(R1DEMOVATE7_Offentlig3)) %>%
+  filter(R1DEMOVATE7_Offentlig1 != 999, R1DEMOVATE7_Offentlig2 != 999, R1DEMOVATE7_Offentlig3 != 999) %>%
+  rename(R1 = R1DEMOVATE7_Offentlig1, R2 = R1DEMOVATE7_Offentlig2, R3 = R1DEMOVATE7_Offentlig3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE7_offentlig = value)
+
+d1 <- left_join(dv, antall,         by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, dag,            by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, komp,           by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, rekruttering,   by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, sak,            by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, grunnlag,       by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, offentlig,      by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+
+# Process attributes:
+d1 <- d1 %>%
+  mutate(# Antall:
+         #R1DEMOVATE7_antall = str_replace(R1DEMOVATE7_antall, "12", "12 p"),
+         #R1DEMOVATE7_antall = str_replace(R1DEMOVATE7_antall, "300", "300 p"),
+         #R1DEMOVATE7_antall = str_replace(R1DEMOVATE7_antall, "1000", "1000 p"),
+         
+         # Dag:
+         R1DEMOVATE7_dag = str_replace(R1DEMOVATE7_dag, "hverdag", "Hverdag"),
+         R1DEMOVATE7_dag = str_replace(R1DEMOVATE7_dag, "helgedag", "Helgedag"),
+         
+         # Kompensasjon:
+         R1DEMOVATE7_komp = str_replace(R1DEMOVATE7_komp, "kompensert med 1000 kroner per time", "1000 kr/t"),
+         R1DEMOVATE7_komp = str_replace(R1DEMOVATE7_komp, "kompensert med 500 kroner per time", "500 kr/t"),
+         R1DEMOVATE7_komp = str_replace(R1DEMOVATE7_komp, "kompensert med 200 kroner per time", "200 kr/t"),
+         R1DEMOVATE7_komp = str_replace(R1DEMOVATE7_komp, "ikke kompensert", "Ingen komp."),
+         
+         # Rekruttering:
+         R1DEMOVATE7_rekruttering = str_replace(R1DEMOVATE7_rekruttering, "Deltakerne trekkes tilfeldig blant alle innbyggerne i kommunen", "Tilfeldig utvalg"),
+         R1DEMOVATE7_rekruttering = str_replace(R1DEMOVATE7_rekruttering, "Registrering er åpen for alle innbyggerne i kommunen til det er fullt", "Åpen påmelding"),
+         
+         # Sak:
+         R1DEMOVATE7_sak = str_replace(R1DEMOVATE7_sak, "tiggerforbud i Bergen", "Tiggeforbud"),
+         R1DEMOVATE7_sak = str_replace(R1DEMOVATE7_sak, "boligbygging på Store Lungegårdsvann", "Boligbygging"),
+         R1DEMOVATE7_sak = str_replace(R1DEMOVATE7_sak, "turistskatt", "Turistskatt"),
+         
+         # Beslutningsgrunnlag:
+         R1DEMOVATE7_grunnlag = str_replace(R1DEMOVATE7_grunnlag, "meningsutveksling i mindre grupper, ledet av uavhengige moderatorer", "Moderatorstyrt"),
+         R1DEMOVATE7_grunnlag = str_replace(R1DEMOVATE7_grunnlag, "troverdig informasjon fra uavhengige eksperter", "Troverdig info fra uavh. Eksperter"),
+         R1DEMOVATE7_grunnlag = str_replace(R1DEMOVATE7_grunnlag, "egne vurderinger og preferanser", "Egne vurderinger og preferanser"),
+         
+         # Offentliggjøring:
+         R1DEMOVATE7_offentlig = str_replace(R1DEMOVATE7_offentlig, "Hvem som deltok i borgerpanelet og hvordan de stemte vil ikke være offentlig", "Stemmegivning offentliggjort"),
+         R1DEMOVATE7_offentlig = str_replace(R1DEMOVATE7_offentlig, "Hvem som deltok i borgerpanelet og hvordan de stemte vil være offentlig", "Stemmegivning ikke offentlig"))
+
+
+d1 <- d1 %>% mutate(Antall = factor(R1DEMOVATE7_antall,       levels = c("300", "100", "12")),
+                    Dag = factor(R1DEMOVATE7_dag,             levels = c("Helgedag", "Hverdag")),
+                    Kompensasjon = factor(R1DEMOVATE7_komp,   levels = c("1000 kr/t", "500 kr/t", "200 kr/t", "Ingen komp.")), 
+                    Rekruttering = factor(R1DEMOVATE7_rekruttering, levels = c("Åpen påmelding", "Tilfeldig utvalg")),
+                    Sak = factor(R1DEMOVATE7_sak,             levels = c("Tiggeforbud", "Boligbygging", "Turistskatt")),
+                    Grunnlag = factor(R1DEMOVATE7_grunnlag,   levels = c("Moderatorstyrt", "Troverdig info fra uavh. Eksperter", "Egne vurderinger og preferanser")),
+                    Offentlig = factor(R1DEMOVATE7_offentlig, levels = c("Stemmegivning ikke offentlig", "Stemmegivning offentliggjort")))
+
+
+# My model:
+# Skal jeg endre på x-aksen?
+p1 <- R1DEMOVATE7_dv ~ Antall + Dag + Kompensasjon + Rekruttering + Sak + Grunnlag + Offentlig
+plot(mm(d1, p1, id = ~ IntervjuID),
+           size = 2.5,
+           xlab = "Marginal Mean\n(Avgjørelsens legitimitet hvis panelet inneholder gitt attributt, skala 0-10)",
+           ylab = "Attributt",
+           legend_pos = "none",
+           xlim = c(4.5,7),
+           vline = c(5.666329))
+
+#mmm <- mm(d1, p1, id = ~ IntervjuID)
+#mean(mmm$estimate)
+```
+
+AMCES:
+
+```{r AMCES2, echo = FALSE, warning = FALSE, message = FALSE}
+# estimation
+amces <- cj(d1, p1, id = ~ IntervjuID)
+#head(amces[c("feature", "level", "estimate", "std.error")], 20L)
+plot(amces)
+
+
+# Delete:
+rm(dv, antall, dag, komp, rekruttering, sak, grunnlag, offentlig, p1, d1, amces)
+```
+
+
+### Respondentfordeling
+
+Variablene *R1DEMOVATE7_1*, *R1DEMOVATE7_2* og *R1DEMOVATE7_3* er eksperimentets avhengige variabel. De andre fordelingene viser hvordan respondentene har blitt fordelt ved bruk av randomisert tildeling av de ulike vignettene.
+
+#### R1DEMOVATE7_1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_1 <- d_factored %>% 
+  group_by(R1DEMOVATE7_1) %>% 
+  count(R1DEMOVATE7_1) %>% 
+  filter(!is.na(R1DEMOVATE7_1)) %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE7_1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+
+#### R1DEMOVATE7_Antall1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Antall1 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Antall1) %>% 
+  count(R1DEMOVATE7_Antall1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Antall1 = forcats::fct_explicit_na(R1DEMOVATE7_Antall1)) %>%
+  filter(R1DEMOVATE7_Antall1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Antall1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE7_Dag1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Dag1 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Dag1) %>% 
+  count(R1DEMOVATE7_Dag1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Dag1 = forcats::fct_explicit_na(R1DEMOVATE7_Dag1)) %>%
+  filter(R1DEMOVATE7_Dag1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE7_Dag1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE7_Komp1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Komp1 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Komp1) %>% 
+  count(R1DEMOVATE7_Komp1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Komp1 = forcats::fct_explicit_na(R1DEMOVATE7_Komp1)) %>%
+  filter(R1DEMOVATE7_Komp1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE7_Komp1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Rekr1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Rekr1 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Rekr1) %>% 
+  count(R1DEMOVATE7_Rekr1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Rekr1 = forcats::fct_explicit_na(R1DEMOVATE7_Rekr1)) %>%
+  filter(R1DEMOVATE7_Rekr1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Rekr1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Sak1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Sak1 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Sak1) %>% 
+  count(R1DEMOVATE7_Sak1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Sak1 = forcats::fct_explicit_na(R1DEMOVATE7_Sak1)) %>%
+  filter(R1DEMOVATE7_Sak1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Sak1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Grunnlag1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Grunnlag1 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Grunnlag1) %>% 
+  count(R1DEMOVATE7_Grunnlag1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Grunnlag1 = forcats::fct_explicit_na(R1DEMOVATE7_Grunnlag1)) %>%
+  filter(R1DEMOVATE7_Grunnlag1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Grunnlag1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Offentlig1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Offentlig1 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Offentlig1) %>% 
+  count(R1DEMOVATE7_Offentlig1) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Offentlig1 = forcats::fct_explicit_na(R1DEMOVATE7_Offentlig1)) %>%
+  filter(R1DEMOVATE7_Offentlig1 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Offentlig1 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+
+#### R1DEMOVATE7_2
+
+Notat: Hva betyr 12 i dette spørsmålet?
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_2 <- d_factored %>% 
+  group_by(R1DEMOVATE7_2) %>% 
+  count(R1DEMOVATE7_2) %>% 
+  filter(!is.na(R1DEMOVATE7_2)) %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE7_2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+
+#### R1DEMOVATE7_Antall2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Antall2 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Antall2)   %>% 
+  count(R1DEMOVATE7_Antall2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Antall2 = forcats::fct_explicit_na(R1DEMOVATE7_Antall2)) %>%
+  filter(R1DEMOVATE7_Antall2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE7_Antall2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE7_Dag2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Dag2 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Dag2) %>% 
+  count(R1DEMOVATE7_Dag2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Dag2 = forcats::fct_explicit_na(R1DEMOVATE7_Dag2)) %>%
+  filter(R1DEMOVATE7_Dag2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Dag2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE7_Komp2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Komp2 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Komp2) %>% 
+  count(R1DEMOVATE7_Komp2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Komp2 = forcats::fct_explicit_na(R1DEMOVATE7_Komp2)) %>%
+  filter(R1DEMOVATE7_Komp2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE7_Komp2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Rekr2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Rekr2 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Rekr2) %>% 
+  count(R1DEMOVATE7_Rekr2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Rekr2 = forcats::fct_explicit_na(R1DEMOVATE7_Rekr2)) %>%
+  filter(R1DEMOVATE7_Rekr2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Rekr2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Sak2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Sak2 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Sak2) %>% 
+  count(R1DEMOVATE7_Sak2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Sak2 = forcats::fct_explicit_na(R1DEMOVATE7_Sak2)) %>%
+  filter(R1DEMOVATE7_Sak2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE7_Sak2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Grunnlag2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Grunnlag2 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Grunnlag2) %>% 
+  count(R1DEMOVATE7_Grunnlag2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Grunnlag2 = forcats::fct_explicit_na(R1DEMOVATE7_Grunnlag2)) %>%
+  filter(R1DEMOVATE7_Grunnlag2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Grunnlag2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Offentlig2
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Offentlig2 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Offentlig2) %>% 
+  count(R1DEMOVATE7_Offentlig2) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Offentlig2 = forcats::fct_explicit_na(R1DEMOVATE7_Offentlig2)) %>%
+  filter(R1DEMOVATE7_Offentlig2 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Offentlig2 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+
+
+
+#### R1DEMOVATE7_3
+
+Notat: Hva betyr 12?
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_3 <- d_factored %>% 
+  group_by(R1DEMOVATE7_3) %>% 
+  count(R1DEMOVATE7_3) %>% 
+  filter(!is.na(R1DEMOVATE7_3)) %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+
+#### R1DEMOVATE7_Antall3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Antall3 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Antall3) %>% 
+  count(R1DEMOVATE7_Antall3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Antall3 = forcats::fct_explicit_na(R1DEMOVATE7_Antall3)) %>%
+  filter(R1DEMOVATE7_Antall3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE7_Antall3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE7_Dag3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Dag3 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Dag3)  %>% 
+  count(R1DEMOVATE7_Dag3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Dag3 = forcats::fct_explicit_na(R1DEMOVATE7_Dag3)) %>%
+  filter(R1DEMOVATE7_Dag3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Dag3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+
+```
+
+#### R1DEMOVATE7_Komp3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Komp3 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Komp3) %>% 
+  count(R1DEMOVATE7_Komp3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Komp3 = forcats::fct_explicit_na(R1DEMOVATE7_Komp3)) %>%
+  filter(R1DEMOVATE7_Komp3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Komp3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Rekr3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Rekr3 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Rekr3) %>% 
+  count(R1DEMOVATE7_Rekr3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Rekr3 = forcats::fct_explicit_na(R1DEMOVATE7_Rekr3)) %>%
+  filter(R1DEMOVATE7_Rekr3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Rekr3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Sak3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Sak3 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Sak3)  %>% 
+  count(R1DEMOVATE7_Sak3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Sak3 = forcats::fct_explicit_na(R1DEMOVATE7_Sak3)) %>%
+  filter(R1DEMOVATE7_Sak3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+
+R1DEMOVATE7_Sak3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Grunnlag3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Grunnlag3 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Grunnlag3)  %>% 
+  count(R1DEMOVATE7_Grunnlag3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Grunnlag3 = forcats::fct_explicit_na(R1DEMOVATE7_Grunnlag3)) %>%
+  filter(R1DEMOVATE7_Grunnlag3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Grunnlag3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+#### R1DEMOVATE7_Offentlig3
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE7_Offentlig3 <- d_factored %>% 
+  group_by(R1DEMOVATE7_Offentlig3) %>% 
+  count(R1DEMOVATE7_Offentlig3) %>% 
+  ungroup() %>%
+  mutate(R1DEMOVATE7_Offentlig3 = forcats::fct_explicit_na(R1DEMOVATE7_Offentlig3)) %>%
+  filter(R1DEMOVATE7_Offentlig3 != "(Missing)") %>%
+  adorn_totals("row", na.rm = F)
+
+R1DEMOVATE7_Offentlig3 %>%
+  kable(col.names = c("Verdi", "Antall")) %>%
+  kable_styling(full_width = FALSE, position = "left")
+```
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+#rm(list = ls())
+```
+```{r include=FALSE, cache=FALSE}
+```
+
+<!--chapter:end:03-eksperimenter.Rmd-->
+

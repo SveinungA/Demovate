@@ -1,0 +1,319 @@
+# Test
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(kableExtra)
+library(haven)
+library(janitor)
+library(data.table)
+library(naniar)
+library(ISLR)
+library(Amelia)
+library(mlbench)
+library(corrplot)
+
+# GGplot:
+theme_set(theme_bw())
+
+# Data:
+
+d <- read_sav("responsanalyse.SAV")
+
+variables_with_labels = map(d, function(x) attr(x, "class") == "haven_labelled") %>% unlist() %>%  names()
+d_factored = d %>% mutate_at( vars(variables_with_labels), as_factor)
+
+d_factored$Bydel <- as.character((d_factored$Bydel))
+d_factored$bydel_8 <- as.character((d_factored$bydel_8))
+d_factored$R1DEMOVATE21 <- as.character((d_factored$R1DEMOVATE21))
+d_factored$aldrkat <- as.character((d_factored$aldrkat))
+d_factored$R1DEMOVATE16 <- as.character((d_factored$R1DEMOVATE16))
+d_factored$R1DEMOVATE18 <- as.character((d_factored$R1DEMOVATE18))
+d_factored$R1DEMOVATE19 <- as.character((d_factored$R1DEMOVATE19))
+d_factored$R1DEMOVATE15 <- as.character((d_factored$R1DEMOVATE15))
+
+##################
+d_factored$R1DEMOVATE7_1 <- as.numeric(d_factored$R1DEMOVATE7_1)
+d_factored$R1DEMOVATE7_2 <- as.numeric(d_factored$R1DEMOVATE7_2)
+d_factored$R1DEMOVATE7_3 <- as.numeric(d_factored$R1DEMOVATE7_3)
+
+##################
+d_factored[d_factored$o_R1DEMOVATE13 == "BOMPENGE","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "BOMPENGEPARTIET","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "folkje askjon mot bompenger","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "De kristine'","R1DEMOVATE13"] <- "Partiet De Kristne"
+```
+
+
+
+## Politiske saker
+
+Her vises svarene på spørsmål om konkrete politiske saker som kan brukes i byborgerpanelet. Dette er spørsmål om **turistskatt**, **boligbygging på Store Lungegårdsvann**, avveiningen mellom **personvern og beskyttelse mot potensielle terrortrusler**, **økonomisk ulikhet** og **tiggeforbud**.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE, fig.height= 8}
+## GJENNOMFØRES TO GANGER - EN FOR Sentrum og en for ikke sentrum
+
+
+# Sentrum
+dat <- d_factored %>% filter(Bydel == "Sentrum")
+
+R1DEMOVATE1 <- dat %>% group_by(R1DEMOVATE1) %>%   count(R1DEMOVATE1) %>%   ungroup() %>%  filter(R1DEMOVATE1 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE2 <- dat %>% group_by(R1DEMOVATE2) %>%   count(R1DEMOVATE2) %>%   ungroup() %>%  filter(R1DEMOVATE2 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE3 <- dat %>% group_by(R1DEMOVATE3) %>%   count(R1DEMOVATE3) %>%   ungroup() %>%  filter(R1DEMOVATE3 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE4 <- dat %>% group_by(R1DEMOVATE4) %>%   count(R1DEMOVATE4) %>%   ungroup() %>%  filter(R1DEMOVATE4 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE5 <- dat %>% group_by(R1DEMOVATE5) %>%   count(R1DEMOVATE5) %>%   ungroup() %>%  filter(R1DEMOVATE5 != "11 - Ikke sikker/Ubesvart") 
+
+R1DEMOVATE1$R1DEMOVATE1 <- str_remove(R1DEMOVATE1$R1DEMOVATE1, " - Jeg støtter det fullstendig")
+R1DEMOVATE1$R1DEMOVATE1 <- str_remove(R1DEMOVATE1$R1DEMOVATE1, " - Jeg motsetter meg det fullstendig")
+
+R1DEMOVATE2$R1DEMOVATE2 <- str_remove(R1DEMOVATE2$R1DEMOVATE2, " - Jeg støtter det fullstendig")
+R1DEMOVATE2$R1DEMOVATE2 <- str_remove(R1DEMOVATE2$R1DEMOVATE2, " - Jeg motsetter meg det fullstendig")
+
+R1DEMOVATE3$R1DEMOVATE3 <- str_remove(R1DEMOVATE3$R1DEMOVATE3, " - Jeg støtter det fullstendig")
+R1DEMOVATE3$R1DEMOVATE3 <- str_remove(R1DEMOVATE3$R1DEMOVATE3, " - Jeg motsetter meg det fullstendig")
+
+R1DEMOVATE4$R1DEMOVATE4 <- str_remove(R1DEMOVATE4$R1DEMOVATE4, " - Jeg støtter det fullstendig")
+R1DEMOVATE4$R1DEMOVATE4 <- str_remove(R1DEMOVATE4$R1DEMOVATE4, " - Jeg motsetter meg det fullstendig")
+
+R1DEMOVATE5$R1DEMOVATE5 <- str_remove(R1DEMOVATE5$R1DEMOVATE5, " - Jeg støtter det fullstendig")
+R1DEMOVATE5$R1DEMOVATE5 <- str_remove(R1DEMOVATE5$R1DEMOVATE5, " - Jeg motsetter meg det fullstendig")
+
+# Test:
+colnames(R1DEMOVATE1) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE2) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE3) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE4) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE5) <- c("Verdi", "Antall")
+
+R1DEMOVATE1 <- R1DEMOVATE1 %>% mutate(Variabel = "R1DEMOVATE1")
+R1DEMOVATE2 <- R1DEMOVATE2 %>% mutate(Variabel = "R1DEMOVATE2")
+R1DEMOVATE3 <- R1DEMOVATE3 %>% mutate(Variabel = "R1DEMOVATE3")
+R1DEMOVATE4 <- R1DEMOVATE4 %>% mutate(Variabel = "R1DEMOVATE4")
+R1DEMOVATE5 <- R1DEMOVATE5 %>% mutate(Variabel = "R1DEMOVATE5")
+
+Byborger_sentrum <- rbind(R1DEMOVATE1, R1DEMOVATE2, R1DEMOVATE3, R1DEMOVATE4, R1DEMOVATE5)
+
+
+#### Ikke sentrum:
+
+dat <- d_factored %>% filter(Bydel != "Sentrum")
+
+# Sentrum
+R1DEMOVATE1 <- dat %>% group_by(R1DEMOVATE1) %>%   count(R1DEMOVATE1) %>%   ungroup() %>%  filter(R1DEMOVATE1 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE2 <- dat %>% group_by(R1DEMOVATE2) %>%   count(R1DEMOVATE2) %>%   ungroup() %>%  filter(R1DEMOVATE2 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE3 <- dat %>% group_by(R1DEMOVATE3) %>%   count(R1DEMOVATE3) %>%   ungroup() %>%  filter(R1DEMOVATE3 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE4 <- dat %>% group_by(R1DEMOVATE4) %>%   count(R1DEMOVATE4) %>%   ungroup() %>%  filter(R1DEMOVATE4 != "11 - Ikke sikker/Ubesvart") 
+R1DEMOVATE5 <- dat %>% group_by(R1DEMOVATE5) %>%   count(R1DEMOVATE5) %>%   ungroup() %>%  filter(R1DEMOVATE5 != "11 - Ikke sikker/Ubesvart") 
+
+R1DEMOVATE1$R1DEMOVATE1 <- str_remove(R1DEMOVATE1$R1DEMOVATE1, " - Jeg støtter det fullstendig")
+R1DEMOVATE1$R1DEMOVATE1 <- str_remove(R1DEMOVATE1$R1DEMOVATE1, " - Jeg motsetter meg det fullstendig")
+
+R1DEMOVATE2$R1DEMOVATE2 <- str_remove(R1DEMOVATE2$R1DEMOVATE2, " - Jeg støtter det fullstendig")
+R1DEMOVATE2$R1DEMOVATE2 <- str_remove(R1DEMOVATE2$R1DEMOVATE2, " - Jeg motsetter meg det fullstendig")
+
+R1DEMOVATE3$R1DEMOVATE3 <- str_remove(R1DEMOVATE3$R1DEMOVATE3, " - Jeg støtter det fullstendig")
+R1DEMOVATE3$R1DEMOVATE3 <- str_remove(R1DEMOVATE3$R1DEMOVATE3, " - Jeg motsetter meg det fullstendig")
+
+R1DEMOVATE4$R1DEMOVATE4 <- str_remove(R1DEMOVATE4$R1DEMOVATE4, " - Jeg støtter det fullstendig")
+R1DEMOVATE4$R1DEMOVATE4 <- str_remove(R1DEMOVATE4$R1DEMOVATE4, " - Jeg motsetter meg det fullstendig")
+
+R1DEMOVATE5$R1DEMOVATE5 <- str_remove(R1DEMOVATE5$R1DEMOVATE5, " - Jeg støtter det fullstendig")
+R1DEMOVATE5$R1DEMOVATE5 <- str_remove(R1DEMOVATE5$R1DEMOVATE5, " - Jeg motsetter meg det fullstendig")
+
+# Test:
+colnames(R1DEMOVATE1) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE2) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE3) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE4) <- c("Verdi", "Antall")
+colnames(R1DEMOVATE5) <- c("Verdi", "Antall")
+
+R1DEMOVATE1 <- R1DEMOVATE1 %>% mutate(Variabel = "R1DEMOVATE1")
+R1DEMOVATE2 <- R1DEMOVATE2 %>% mutate(Variabel = "R1DEMOVATE2")
+R1DEMOVATE3 <- R1DEMOVATE3 %>% mutate(Variabel = "R1DEMOVATE3")
+R1DEMOVATE4 <- R1DEMOVATE4 %>% mutate(Variabel = "R1DEMOVATE4")
+R1DEMOVATE5 <- R1DEMOVATE5 %>% mutate(Variabel = "R1DEMOVATE5")
+
+Byborger_ikke <- rbind(R1DEMOVATE1, R1DEMOVATE2, R1DEMOVATE3, R1DEMOVATE4, R1DEMOVATE5)
+
+##
+#Byborger_sentrum <- Byborger_sentrum %>% mutate(Bosted = "Sentrumsbeboer")
+#Byborger_sentrum$V <- as.numeric(Byborger_sentrum$Verdi)
+
+Byborger_sentrum <- 
+  Byborger_sentrum %>%
+  mutate(Bosted = "Sentrumsbeboer",
+         V = as.numeric(Verdi)) %>%
+  mutate(sum1 = (Antall * V)) %>% 
+  group_by(Variabel) %>%
+  mutate(sum2 = sum(sum1),
+         pct = (sum1 / sum2)) %>%
+  select(Verdi, Antall, Variabel, Bosted, pct)
+
+
+
+#Byborger_ikke    <- Byborger_ikke    %>% mutate(Bosted = "Ikke Sentrum")
+#Byborger_ikke$V <- as.numeric(Byborger_ikke$Verdi)
+
+Byborger_ikke <- 
+  Byborger_ikke %>%
+  mutate(Bosted = "Ikke Sentrum",
+         V = as.numeric(Verdi)) %>%
+  mutate(sum1 = (Antall * V)) %>% 
+  group_by(Variabel) %>%
+  mutate(sum2 = sum(sum1),
+         pct = (sum1 / sum2)) %>%
+  select(Verdi, Antall, Variabel, Bosted, pct)
+
+
+Byborger <- rbind(Byborger_sentrum, Byborger_ikke)
+Byborger$Verdi <- as.numeric(Byborger$Verdi)
+
+Byborger$Variabel <- factor(Byborger$Variabel, levels = c("R1DEMOVATE1", "R1DEMOVATE2", "R1DEMOVATE3", "R1DEMOVATE4", "R1DEMOVATE5"), 
+                           labels = c("Turistskatt", "Boligbygging", "Personvern", "Økonomisk ulikhet", "Tiggeforbud"))
+
+### Plot:
+
+Byborger %>%
+  ggplot(aes(x = factor(Verdi), y = pct, group = Bosted, color = Bosted)) +
+  geom_line(size = 0.9, alpha = 0.8) +
+  geom_point(size = 2.5, alpha = 0.8) +
+  facet_wrap(~ Variabel, ncol = 2) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Verdi", y = "Antall", title = "Personlig oppfatning om ulike politiske saker", caption = "Spørsmål: På en skala fra 0 til 10, der 0 betyr at du motsetter deg det fullstendig\n og 10 betyr at du støtter det fullstendig, hvor sterkt støtter eller motsetter du deg [Politisk sak]?")
+
+```
+
+
+
+
+
+
+
+
+```{r eval = FALSE}
+dat <- d_factored %>%
+  select(IntervjuID, Bydel, alder, R1DEMOVATE21, R1DEMOVATE1, R1DEMOVATE2, R1DEMOVATE3, R1DEMOVATE4, R1DEMOVATE5) %>%
+  # Endrer 11 til NA:
+  replace_with_na(replace = list(R1DEMOVATE1 = c("11 - Ikke sikker / Ubesvart"),
+                                 R1DEMOVATE2 = c("11 - Ikke sikker / Ubesvart"),
+                                 R1DEMOVATE3 = c("11 - Ikke sikker / Ubesvart"),
+                                 R1DEMOVATE4 = c("11 - Ikke sikker / Ubesvart"),
+                                 R1DEMOVATE5 = c("11 - Ikke sikker / Ubesvart"))) %>%
+  # Endrer på Bydel-var:
+  mutate(Bydel = str_replace(Bydel, "Arna og Åsane", "Ikke sentrum"),
+         Bydel = str_replace(Bydel, "Bergen Vest", "Ikke sentrum"),
+         Bydel = str_replace(Bydel, "Fana og Ytrebygda", "Ikke sentrum")) %>%
+  # Fjerner tekst i verdifelt:
+  mutate(R1DEMOVATE1 = str_remove(R1DEMOVATE1, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE1 = str_remove(R1DEMOVATE1, " - Jeg motsetter meg det fullstendig"),
+         R1DEMOVATE2 = str_remove(R1DEMOVATE2, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE2 = str_remove(R1DEMOVATE2, " - Jeg motsetter meg det fullstendig"),
+         R1DEMOVATE3 = str_remove(R1DEMOVATE3, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE3 = str_remove(R1DEMOVATE3, " - Jeg motsetter meg det fullstendig"),
+         R1DEMOVATE4 = str_remove(R1DEMOVATE4, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE4 = str_remove(R1DEMOVATE4, " - Jeg motsetter meg det fullstendig"),
+         R1DEMOVATE5 = str_remove(R1DEMOVATE5, " - Jeg støtter det fullstendig"),
+         R1DEMOVATE5 = str_remove(R1DEMOVATE5, " - Jeg motsetter meg det fullstendig")) %>% 
+  # Konverterer til numerisk
+  mutate(R1DEMOVATE1 = as.numeric(R1DEMOVATE1),
+         R1DEMOVATE2 = as.numeric(R1DEMOVATE2),
+         R1DEMOVATE3 = as.numeric(R1DEMOVATE3),
+         R1DEMOVATE4 = as.numeric(R1DEMOVATE4),
+         R1DEMOVATE5 = as.numeric(R1DEMOVATE5)) %>%
+  mutate(gender = R1DEMOVATE21) %>%
+  select(- R1DEMOVATE21)
+  
+
+# Deskriptiv statistikk:
+summary(dat)
+missmap(dat, col=c("red", "gray"), legend=FALSE)
+
+# Bygge logistisk modell:
+lm1 <- summary(lm(R1DEMOVATE1 ~ alder + factor(Bydel) + factor(gender), data=dat))
+lm2 <- summary(lm(R1DEMOVATE2 ~ alder + factor(Bydel) + factor(gender), data=dat))
+lm3 <- summary(lm(R1DEMOVATE3 ~ alder + factor(Bydel) + factor(gender), data=dat))
+lm4 <- summary(lm(R1DEMOVATE4 ~ alder + factor(Bydel) + factor(gender), data=dat))
+lm5 <- summary(lm(R1DEMOVATE5 ~ alder + factor(Bydel) + factor(gender), data=dat))
+
+# Print:
+print(lm1)
+print(lm2)
+print(lm3)
+print(lm4)
+print(lm5)
+
+unique(d_factored$R1DEMOVATE21)
+dat 
+
+  gather(Variabel, Verdi, - IntervjuID, - Bydel, factor_key = TRUE) -> dat
+
+dat %>% 
+  group_by(Variabel) %>%
+  mutate(pct = (Verdi / sum(Verdi, na.rm = TRUE)) * 100) %>% 
+  ggplot(x = Verdi, y = pct, fill = Bydel) +
+  geom_line(aes(x = Verdi, y = pct),size = 0.9, alpha = 0.8) +
+  geom_point(aes(x = Verdi, y = pct),size = 2.5, alpha = 0.8) +
+  facet_wrap(~ Variabel, ncol = 2) +
+  labs(x = "Verdi", y = "Antall", title = "Personlig oppfatning om ulike politiske saker", caption = "Spørsmål: På en skala fra 0 til 10, der 0 betyr at du motsetter deg det fullstendig\n og 10 betyr at du støtter det fullstendig, hvor sterkt støtter eller motsetter du deg [Politisk sak]?") +
+  theme(legend.position = "none")
+
+  summarise(mean = mean(Verdi, na.rm = TRUE), 
+            sd = sd(Verdi, na.rm = TRUE), 
+            max = max(Verdi, na.rm = TRUE),
+            min = min(Verdi, na.rm = TRUE),
+            n = n())
+  
+
+unique(dat$R1DEMOVATE5)
+```
+
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+R1DEMOVATE13 <- d_factored %>%
+  mutate(R1DEMOVATE13 = str_replace(R1DEMOVATE13, "Vil ikke stemme /Vil stemme blankt", "Bort"),
+         R1DEMOVATE13 = str_replace(R1DEMOVATE13, "Ikke sikker", "Bort"),
+         R1DEMOVATE13 = str_replace(R1DEMOVATE13, "Vil ikke si", "Bort")) %>%
+  filter(R1DEMOVATE13 != "Bort") %>%
+  group_by(R1DEMOVATE13) %>% 
+  count(R1DEMOVATE13) %>% 
+  ungroup() %>%
+  mutate(sum = (n/sum(n))) %>%
+  ggplot(aes(x = reorder(R1DEMOVATE13, sum), y = sum, fill = R1DEMOVATE13)) +
+  geom_col() +
+  labs(x = "Parti", y = "Oppslutning", title = "Partioppslutning", subtitle = "Undersøkelse gjennomført Des 2019 - Jan 2020. Utvalg: 746 personer") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  theme(legend.position = "none") +
+  guides(fill=FALSE) +
+  coord_flip() +
+  theme_bw()
+                    
+
+R1DEMOVATE13$Order <- NA 
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Rødt",  "Order"] <- 1
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "SV (Sosialistisk Venstreparti)",  "Order"] <- 2
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Arbeiderpartiet",  "Order"] <- 3
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Senterpartiet",  "Order"] <- 4
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Miljøpartiet De Grønne",  "Order"] <- 5
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Venstre",  "Order"] <- 6
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "KrF (Kristelig Folkeparti)",  "Order"] <- 7
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Høyre",  "Order"] <- 8
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Frp (Fremskrittspartiet)",  "Order"] <- 9
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Folkeaksjonen Nei til mer bompenger (FNB)",  "Order"] <- 10
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Partiet De Kristne", "Order"] <- 11
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Demokratene i Norge", "Order"] <- 12
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Pensjonistpartiet", "Order"] <- 13
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Vil ikke stemme /Vil stemme blankt", "Order"] <- 14
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Ikke sikker", "Order"] <- 15
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Vil ikke si", "Order"] <- 16
+R1DEMOVATE13[R1DEMOVATE13$R1DEMOVATE13 == "Andre", "Order"] <- 17
+
+R1DEMOVATE13 %>%
+  ggplot(aes(x = reorder(R1DEMOVATE13, desc(Order)), y = n, fill = R1DEMOVATE13)) +
+  geom_col() + 
+  labs(x = "Politisk parti", y = "Antall", title = "Partitilhørighet", subtitle = "Hva ville du stemt dersom det var stortingsvalg i morgen?") +
+  theme(legend.position = "none") + 
+  coord_flip()
+
+R1DEMOVATE13$Order <- NULL
+```
+
+

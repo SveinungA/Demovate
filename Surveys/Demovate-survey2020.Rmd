@@ -1,0 +1,1218 @@
+---
+title: "Demokratiundersøkelse i Bergen, 2020"
+author: "Sveinung Arnesen og Daniel Instebø"
+date: "6/17/2020"
+output:
+   html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    font: Calibri
+    df_print: paged
+    code_folding: hide
+    
+---
+
+```{r setup, echo=FALSE, warning=FALSE, message=FALSE}
+if(!require(broom)) { install.packages("broom"); require(broom)}
+if(!require(codebook)) { install.packages("codebook"); require(codebook)}
+if(!require(dplyr)) { install.packages("dplyr"); require(dplyr)}
+if(!require(expss)) { install.packages("expss"); require(expss)}
+if(!require(gganimate)) { install.packages("gganimate"); require(gganimate)}
+if(!require(gt)) { install.packages("gt"); require(gt)}
+if(!require(haven)) { install.packages("haven"); require(haven)}
+if(!require(knitr)) { install.packages("knitr"); require(knitr)}
+if(!require(naniar)) { install.packages("naniar"); require(naniar)}
+if(!require(paletteer)) { install.packages("paletteer"); require(paletteer)}
+if(!require(patchwork)) { install.packages("patchwork"); require(patchwork)}
+if(!require(readxl)) { install.packages("readxl"); require(readxl)}
+if(!require(scales)) { install.packages("scales"); require(scales)}
+if(!require(stack)) { install.packages("stack"); require(stack)}
+if(!require(tidyverse)) { install.packages("tidyverse"); require(tidyverse)}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+```
+
+```{r import_data}
+
+# d <- haven::read_spss("responsanalyse.SAV")
+# d <- tibble(d, stringsAsFactors = FALSE)
+# d = add_labelled_class(d) # add missing 'labelled' class
+
+d <- read_sav("responsanalyse.SAV")
+d <- tibble(d, stringsAsFactors = FALSE)
+e <- read_sav("responsanalyse.SAV")
+
+#Husk NA
+```
+
+```{r manage_data}
+d <- d %>% mutate(Bydel = as.character(case_when(Bydel==1 ~ 'Sentrum',
+                                    Bydel==2 ~ 'Fana og Ytrebygda',
+                                    Bydel==3 ~ 'Arna og Åsane',
+                                    Bydel==4 ~ 'Bergen Vest')),
+                  Bydel=lvls_reorder(Bydel, c(4, 1:3)),
+                  Kjonn = as.character(case_when(R1DEMOVATE21==1 ~ 'Mann',
+                                                 R1DEMOVATE21==2 ~ 'Kvinne')),
+                  Aldersgrupper = as.character(case_when(aldrkat==1 ~ 'Under 30 år',
+                                             aldrkat==2 ~ '30-44 år',
+                                             aldrkat==3 ~ '45-59 år',
+                                             aldrkat==4 ~ '60 år og eldre')),
+                  Aldersgrupper = lvls_reorder(Aldersgrupper, c(4, 1:3)),
+                  Utdanning = as.character(case_when(R1DEMOVATE18==1 ~ 'Grunnskole',
+                                        R1DEMOVATE18==2 ~ 'Videregående',
+                                        R1DEMOVATE18==3 ~ 'Universitet/høyskole (inntil 2 år)',
+                                        R1DEMOVATE18==4 ~ 'Universitet/høyskole (mer enn 2 år)')),
+                  Utdanning = lvls_reorder(Utdanning, c(1, 4, 2, 3)),
+                  R1DEMOVATE1 = na_if(R1DEMOVATE1, 11),
+                  R1DEMOVATE2 = na_if(R1DEMOVATE2, 11),
+                  R1DEMOVATE3 = na_if(R1DEMOVATE3, 11),
+                  R1DEMOVATE4 = na_if(R1DEMOVATE4, 11),
+                  R1DEMOVATE5 = na_if(R1DEMOVATE5, 11),
+                  R1DEMOVATE8 = na_if(R1DEMOVATE8, 11),
+                  R1DEMOVATE89 = na_if(R1DEMOVATE89, 11),
+                  R1DEMOVATE9 = na_if(R1DEMOVATE9, 11),
+                  R1DEMOVATE10 = na_if(R1DEMOVATE10, 11),
+                  R1DEMOVATE11 = na_if(R1DEMOVATE11, 11),
+                  R1DEMOVATE12 = na_if(R1DEMOVATE12, 11)
+                 
+)
+
+
+``` 
+
+# Introduksjon
+Denne rapporten er del av det forskningsrådsfinansierte prosjektet "Demokratisk innovasjon i praksis" (DEMOVATE), ledet av Bergen kommune og NORCE, med Universitetet i Bergen og Stanford University som partnere.
+Undersøkelsen som presenteres i denne rapporten er den første av to spørreundersøkelser som skal gjennomføres i prosjektperioden.
+
+Formålet med denne første undersøkelsen er å rede grunnen for kommende demokratiarrangementer, hvor innbyggere i Bergen inviteres til å si sin mening om utvalgte saker som opptar byens befolkning og politikere.
+Undersøkelsen fungerer som beslutnigsstøtte for å bestemme hvilke saker som skal tas opp arrangmentene, og hvordan arrangmentene skal legges opp. 
+
+Rapporten er delt inn i fire deler. 
+Den første viser hvilke holdninger bergensere har til turistskatt, tigging på gaten, bekjemping av økonomisk ulikhet, boligbygging på Store Lungegårdsvann, og terrortiltak i byen.
+Dette er saker som har vært vurdert som aktuelle diskusjonssaker i demokratiarrangementene.
+Den andre delen har kartlagt hvilke tillit innbyggerne i Bergen har til sentrale samfunnsaktører i Bergen; politikerne, byråkratiet, og media.
+Den tredje delen viser resultatene fra et eksperiment hvor vi har lagt fram ulike varianter av demokratiarrangementer for å måle om enkelte varianter er bedre egnet til å 1. Øke deltakelsen, og/eller 2. å øke legitimiteten til arrangementet blant innbyggerne.
+Den fjerde delen presenterer datasettet i sin fulle bredde.
+
+Rapporten er først og fremst ment til internt bruk i prosjektet, og fokuserer på å fremstille data visuelt og korte beskrivelser av hovedtendenser i data.
+Om noen ønsker å bruke rapporten til noe annet, ber vi dem ta kontakt med [Sveinung Arnesen](sarn@norceresearch.no).
+Dataene er ikke vektet, og ved vekting vil mindre endringer i svarfordelingen kunne forekomme.
+Koden som er brukt til å analysere data er tilgjengelig ved å trykke på "code"-knappene til høyre i dokumentet.
+
+# Politiske holdninger
+## Turistskatt
+
+
+>Det har vært oppe til diskusjon om man skal innføre skatt på cruiseturismen i Bergen. Skatten skal gå til vedlikehold av fasiliteter som turistene bruker. Hvor sterkt støtter eller motsetter du deg en slik turistskatt? 
+
+```{r cruiseturisme_fig}
+p1 <- d %>% ggplot(aes(x = R1DEMOVATE1)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Turistskatt', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig'))
+
+p2 <- d %>% ggplot(aes(x = R1DEMOVATE1)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Turistskatt', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Bydel, ncol=1)
+
+p3 <- d %>% ggplot(aes(x = R1DEMOVATE1)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Turistskatt', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Aldersgrupper, ncol=1)
+
+p4 <- d %>% ggplot(aes(x = R1DEMOVATE1)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Turistskatt', y='Prosent') + 
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Utdanning, ncol=1)
+
+p5 <- d %>% ggplot(aes(x = R1DEMOVATE1)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Turistskatt', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Kjonn, ncol=1)
+
+p6 <- d %>% ggplot(aes(x= R1DEMOVATE12, y=R1DEMOVATE1)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE12)) +
+  labs(y='Turistskatt', x='Selvplassering på høyre/venstre-skala') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nVenstre', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nHøyre')) 
+
+p7 <- d %>% ggplot(aes(x= R1DEMOVATE10, y=R1DEMOVATE1)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE10)) +
+  labs(y='Turistskatt', x='Opplevd påvirkningskraft') +
+ scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIkke i \ndet hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFullt \nog helt')) 
+
+p1
+p3+p4
+p5+p2
+p6+p7
+```
+
+Resultatene viser at nesten tretti prosent av respondentene støtter turistskatt fullt og helt, og svært få respondenter motsetter seg en slik skatt.
+Vi skal huske på at denne undersøkelsen ble gjennomført før koronakrisen, og at holdningene kan ha endret seg nå som turismen har sunket drastisk.
+Det er også verdt å merke seg at cruiseturismen er nevnt eksplisitt i spørsmålsformuleringen, så det er skatt på denne typen turisme respondentene  forholdt seg til da de svarte.
+
+Det er verdt å trekke fram at eldre respondenter, folk med høyere utdannelse, kvinner og sentrumsbeboere i sterkere grad støtter skatt på cruiseturismen.
+
+Figurene med kulepunkter til venstre viser hvordan holdningene fordeler seg på henholdsvis den politiske høyre/venstre-aksen.
+Vi ser at respondenter som plasserer seg til venstre på skalaen støtter turistskatten mer enn de som plasserer seg til høyre, men at flertallet også på høyresiden støtter turistskatt.
+
+
+```{r cruiseturisme_reg}
+
+ols <- lm(R1DEMOVATE1 ~ Bydel + Kjonn + Aldersgrupper +  Utdanning + R1DEMOVATE10 + R1DEMOVATE11 + R1DEMOVATE12, data = d)
+ols <- broom::tidy(ols)
+ols <- ols %>% mutate(term = case_when(term=='(Intercept)' ~ 'Skjæringspunkt',
+                                       term=='BydelFana og Ytrebygda' ~ 'Fana og Ytrebygda',
+                                       term=='BydelArna og Åsane' ~ 'Arna og Åsane',
+                                       term=='BydelBergen Vest' ~ 'Bergen Vest',
+                                       term=='KjonnMann' ~ 'Mann',
+                                       term=='Aldersgrupper30-44 år' ~ '30-44 år',
+                                       term=='Aldersgrupper45-59 år' ~ '45-59 år',
+                                       term=='Aldersgrupper60 år og eldre' ~ '60 år og eldre',
+                                       term=='UtdanningVideregående' ~ 'Videregående',
+                                       term=='UtdanningUniversitet/høyskole (inntil 2 år)' ~ 'Universitet/høyskole (inntil 2 år)',
+                                       term=='UtdanningUniversitet/høyskole (mer enn 2 år)' ~ 'Universitet/høyskole (mer enn 2 år)',
+                                       term=='R1DEMOVATE19' ~ 'Inntekt',
+                                       term=='R1DEMOVATE10' ~ 'Selvopplevd politisk innflytelse',
+                                       term=='R1DEMOVATE11' ~ 'Selvopplevd politisk innsikt',
+                                       term=='R1DEMOVATE12' ~ 'Selvplassering på politisk skala'
+                                       ))
+
+gt(ols) %>%
+   tab_header(title = 'Oppslutning om turistskatt i Bergen',
+              subtitle = 'Regresjonsanalyse') %>%
+   cols_label(term = 'Variabel',
+              estimate = 'Koeffisient',
+              std.error = 'Standardfeil',
+              statistic = 't-verdi',
+              p.value = 'p-verdi') %>% 
+  fmt_number(columns = vars(estimate, std.error, statistic, p.value),
+             decimals = 2) %>% 
+  tab_row_group(., group = 'Bydel (Sentrum som referansekategori)', rows = 2:4) %>% 
+  tab_row_group(., group = 'Kjønn (Kvinne som referansekategori)', rows = 5) %>% 
+  tab_row_group(., group = 'Alder (Under 30 år som referansekategori)', rows = 6:8) %>%
+    tab_row_group(., group = 'Utdanning (Grunnskole som referansekategori)', rows = 9:11) %>%    tab_options(table.width = "75%",               table.font.size = "12px",               row_group.background.color = '#f2f2f2', table.align = 'left' )
+  
+```
+
+## Boligbygging på Store Lungegårdsvann
+> Det har i enkelte avisinnlegg blitt tatt til orde for å bygge boliger på deler av Store Lungegårdsvann. Hvor sterkt støtter eller motsetter du deg at dette gjøres?	
+
+```{r storelungen_fig}
+p1 <- d %>% ggplot(aes(x = R1DEMOVATE2)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Boliger på Store Lungegårdsvann', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) 
+
+p2 <- d %>% ggplot(aes(x = R1DEMOVATE2)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Boliger på Store Lungegårdsvann', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Bydel, ncol=1)
+
+p3 <- d %>% ggplot(aes(x = R1DEMOVATE2)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Boliger på Store Lungegårdsvann', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Aldersgrupper, ncol=1)
+
+p4 <- d %>% ggplot(aes(x = R1DEMOVATE2)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Boliger på Store Lungegårdsvann', y='Prosent') + 
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Utdanning, ncol=1)
+
+p5 <- d %>% ggplot(aes(x = R1DEMOVATE2)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Boliger på Store Lungegårdsvann', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Kjonn, ncol=1)
+
+p6 <- d %>% ggplot(aes(x= R1DEMOVATE12, y=R1DEMOVATE2)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE12)) +
+  labs(y='Boliger på Store Lungegårdsvann', x='Selvplassering på høyre/venstre-skala') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nVenstre', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nHøyre')) 
+
+p7 <- d %>% ggplot(aes(x= R1DEMOVATE10, y=R1DEMOVATE2)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE10)) +
+  labs(y='Boliger på Store Lungegårdsvann', x='Opplevd påvirkningskraft') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIkke i \ndet hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFullt \nog helt')) 
+
+p1
+p3+p4
+p5+p2
+p6+p7
+```
+
+Mange bergensere motsetter seg fullstendig at det skal åpnes for å bygge boliger på Store Lungegårdsvann.
+Et lite mindretall støtter denne tanken, mens om lag en av fem hverken støtter eller motsetter seg det.
+Motstanden er størst i aldersgruppen over 60 år og blant kvinner.
+Sentrumsbeboere er mer positive enn folk som bor utenfor sentrumskjernen (Arna og Åsane).
+
+Respondenter som plasserer seg til høyre politisk er mer støttende til boligbygging enn respondenter som plasserer seg til venstre på skalaen.
+
+```{r storelungen_reg}
+
+ols <- lm(R1DEMOVATE2 ~ Bydel + Kjonn + Aldersgrupper +  Utdanning + R1DEMOVATE10 + R1DEMOVATE11 + R1DEMOVATE12, data = d)
+ols <- broom::tidy(ols)
+ols <- ols %>% mutate(term = case_when(term=='(Intercept)' ~ 'Skjæringspunkt',
+                                       term=='BydelFana og Ytrebygda' ~ 'Fana og Ytrebygda',
+                                       term=='BydelArna og Åsane' ~ 'Arna og Åsane',
+                                       term=='BydelBergen Vest' ~ 'Bergen Vest',
+                                       term=='KjonnMann' ~ 'Mann',
+                                       term=='Aldersgrupper30-44 år' ~ '30-44 år',
+                                       term=='Aldersgrupper45-59 år' ~ '45-59 år',
+                                       term=='Aldersgrupper60 år og eldre' ~ '60 år og eldre',
+                                       term=='UtdanningVideregående' ~ 'Videregående',
+                                       term=='UtdanningUniversitet/høyskole (inntil 2 år)' ~ 'Universitet/høyskole (inntil 2 år)',
+                                       term=='UtdanningUniversitet/høyskole (mer enn 2 år)' ~ 'Universitet/høyskole (mer enn 2 år)',
+                                       term=='R1DEMOVATE19' ~ 'Inntekt',
+                                       term=='R1DEMOVATE10' ~ 'Selvopplevd politisk innflytelse',
+                                       term=='R1DEMOVATE11' ~ 'Selvopplevd politisk innsikt',
+                                       term=='R1DEMOVATE12' ~ 'Selvplassering på politisk skala'
+                                       ))
+
+gt(ols) %>%
+   tab_header(title = 'Oppslutning om boligbygging på Store Lungegårdsvann',
+              subtitle = 'Regresjonsanalyse') %>%
+   cols_label(term = 'Variabel',
+              estimate = 'Koeffisient',
+              std.error = 'Standardfeil',
+              statistic = 't-verdi',
+              p.value = 'p-verdi') %>% 
+  fmt_number(columns = vars(estimate, std.error, statistic, p.value),
+             decimals = 2) %>% 
+  tab_row_group(., group = 'Bydel (Sentrum som referansekategori)', rows = 2:4) %>% 
+  tab_row_group(., group = 'Kjønn (Kvinne som referansekategori)', rows = 5) %>% 
+  tab_row_group(., group = 'Alder (Under 30 år som referansekategori)', rows = 6:8) %>%
+    tab_row_group(., group = 'Utdanning (Grunnskole som referansekategori)', rows = 9:11) %>%    tab_options(table.width = "75%",               table.font.size = "12px",               row_group.background.color = '#f2f2f2', table.align = 'left' )
+```
+
+
+## Terrorbekjempelse
+> Påstand: Myndighetene bør innføre flere tiltak for å beskytte borgere mot potensielle terrortrusler, selv om dette kan gå på bekostning av personvernet.
+
+```{r terrorbekjempelse_fig}
+p1 <- d %>% ggplot(aes(x = R1DEMOVATE3)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Tiltak mot terror', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) 
+
+p2 <- d %>% ggplot(aes(x = R1DEMOVATE3)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Tiltak mot terror', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Bydel, ncol=1)
+
+p3 <- d %>% ggplot(aes(x = R1DEMOVATE3)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Tiltak mot terror', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Aldersgrupper, ncol=1)
+
+p4 <- d %>% ggplot(aes(x = R1DEMOVATE3)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Tiltak mot terror', y='Prosent') + 
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Utdanning, ncol=1)
+
+p5 <- d %>% ggplot(aes(x = R1DEMOVATE3)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Tiltak mot terror', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Kjonn, ncol=1)
+
+p6 <- d %>% ggplot(aes(x= R1DEMOVATE12, y=R1DEMOVATE3)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE12)) +
+  labs(y='Tiltak mot terror', x='Selvplassering på høyre/venstre-skala') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nVenstre', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nHøyre')) 
+
+p7 <- d %>% ggplot(aes(x= R1DEMOVATE10, y=R1DEMOVATE3)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE10)) +
+  labs(y='Tiltak mot terror', x='Opplevd påvirkningskraft') +
+   scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIkke i \ndet hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFullt \nog helt')) 
+
+p1
+p3+p4
+p5+p2
+p6+p7
+```
+
+Det er mange som er i tvende sinn når de skal avveie terrorbekjempelse opp mot personvernhensyn.
+Dette reflekteres også blant bergenserne, hvor en av fire hverken støtter eller motsetter seg at myndighetene skal innføre flere tiltak for å beskytte borgere mot potensielle terrortrusler.
+
+Et lite flertall støtter påstanden, men bergenserne fordeler seg ganske jevnt på begge sider av svarskalaen.
+Kvinner og eldre respondenter støtter påstanden mer enn menn og yngre respondenter gjør, og det går også et tydelig skille langs den politiske høyre/venstre-aksen hvor respondenter på høyresiden støtter slike tiltak mer enn respondenter på venstresiden gjør.
+
+```{r terrorbekjempelse_reg}
+
+ols <- lm(R1DEMOVATE3 ~ Bydel + Kjonn + Aldersgrupper +  Utdanning + R1DEMOVATE10 + R1DEMOVATE11 + R1DEMOVATE12, data = d)
+ols <- broom::tidy(ols)
+ols <- ols %>% mutate(term = case_when(term=='(Intercept)' ~ 'Skjæringspunkt',
+                                       term=='BydelFana og Ytrebygda' ~ 'Fana og Ytrebygda',
+                                       term=='BydelArna og Åsane' ~ 'Arna og Åsane',
+                                       term=='BydelBergen Vest' ~ 'Bergen Vest',
+                                       term=='KjonnMann' ~ 'Mann',
+                                       term=='Aldersgrupper30-44 år' ~ '30-44 år',
+                                       term=='Aldersgrupper45-59 år' ~ '45-59 år',
+                                       term=='Aldersgrupper60 år og eldre' ~ '60 år og eldre',
+                                       term=='UtdanningVideregående' ~ 'Videregående',
+                                       term=='UtdanningUniversitet/høyskole (inntil 2 år)' ~ 'Universitet/høyskole (inntil 2 år)',
+                                       term=='UtdanningUniversitet/høyskole (mer enn 2 år)' ~ 'Universitet/høyskole (mer enn 2 år)',
+                                       term=='R1DEMOVATE19' ~ 'Inntekt',
+                                       term=='R1DEMOVATE10' ~ 'Selvopplevd politisk innflytelse',
+                                       term=='R1DEMOVATE11' ~ 'Selvopplevd politisk innsikt',
+                                       term=='R1DEMOVATE12' ~ 'Selvplassering på politisk skala'
+                                       ))
+
+gt(ols) %>%
+   tab_header(title = 'Støtte til tiltak mot terror',
+              subtitle = 'Regresjonsanalyse') %>%
+   cols_label(term = 'Variabel',
+              estimate = 'Koeffisient',
+              std.error = 'Standardfeil',
+              statistic = 't-verdi',
+              p.value = 'p-verdi') %>% 
+  fmt_number(columns = vars(estimate, std.error, statistic, p.value),
+             decimals = 2) %>% 
+  tab_row_group(., group = 'Bydel (Sentrum som referansekategori)', rows = 2:4) %>% 
+  tab_row_group(., group = 'Kjønn (Kvinne som referansekategori)', rows = 5) %>% 
+  tab_row_group(., group = 'Alder (Under 30 år som referansekategori)', rows = 6:8) %>%
+    tab_row_group(., group = 'Utdanning (Grunnskole som referansekategori)', rows = 9:11) %>%    tab_options(table.width = "75%",               table.font.size = "12px",               row_group.background.color = '#f2f2f2', table.align = 'left' )
+```
+
+## Redusere økonomiske forskjeller
+> Byrådet bør jobbe for å i større grad redusere økonomiske forskjeller i samfunnet.
+
+```{r forskjeller_fig}
+p1 <- d %>% ggplot(aes(x = R1DEMOVATE4)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Redusere økonomiske forskjeller', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) 
+
+p2 <- d %>% ggplot(aes(x = R1DEMOVATE4)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Redusere økonomiske forskjeller', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Bydel, ncol=1)
+
+p3 <- d %>% ggplot(aes(x = R1DEMOVATE4)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Redusere økonomiske forskjeller', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Aldersgrupper, ncol=1)
+
+p4 <- d %>% ggplot(aes(x = R1DEMOVATE4)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Redusere økonomiske forskjeller', y='Prosent') + 
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Utdanning, ncol=1)
+
+p5 <- d %>% ggplot(aes(x = R1DEMOVATE4)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Redusere økonomiske forskjeller', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Kjonn, ncol=1)
+
+p6 <- d %>% ggplot(aes(x= R1DEMOVATE12, y=R1DEMOVATE4)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE12)) +
+  labs(y='Redusere økonomiske forskjeller', x='Selvplassering på høyre/venstre-skala') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nVenstre', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nHøyre')) 
+
+p7 <- d %>% ggplot(aes(x= R1DEMOVATE10, y=R1DEMOVATE4)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE10)) +
+  labs(y='Redusere økonomiske forskjeller', x='Opplevd påvirkningskraft') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIkke i \ndet hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFullt \nog helt')) 
+
+p1
+p3+p4
+p5+p2
+p6+p7
+```
+
+Et stort flertall av bergenserne mener at lokale myndigheter bør jobbe for å redusere økonomiske forskjeller i byen.
+Kvinner støtter dette synet sterkere enn menn, og det går også et klart skille langs høyre/venstre-aksen.
+
+```{r forskjeller_reg}
+
+ols <- lm(R1DEMOVATE4 ~ Bydel + Kjonn + Aldersgrupper +  Utdanning + R1DEMOVATE10 + R1DEMOVATE11 + R1DEMOVATE12, data = d)
+ols <- broom::tidy(ols)
+ols <- ols %>% mutate(term = case_when(term=='(Intercept)' ~ 'Skjæringspunkt',
+                                       term=='BydelFana og Ytrebygda' ~ 'Fana og Ytrebygda',
+                                       term=='BydelArna og Åsane' ~ 'Arna og Åsane',
+                                       term=='BydelBergen Vest' ~ 'Bergen Vest',
+                                       term=='KjonnMann' ~ 'Mann',
+                                       term=='Aldersgrupper30-44 år' ~ '30-44 år',
+                                       term=='Aldersgrupper45-59 år' ~ '45-59 år',
+                                       term=='Aldersgrupper60 år og eldre' ~ '60 år og eldre',
+                                       term=='UtdanningVideregående' ~ 'Videregående',
+                                       term=='UtdanningUniversitet/høyskole (inntil 2 år)' ~ 'Universitet/høyskole (inntil 2 år)',
+                                       term=='UtdanningUniversitet/høyskole (mer enn 2 år)' ~ 'Universitet/høyskole (mer enn 2 år)',
+                                       term=='R1DEMOVATE19' ~ 'Inntekt',
+                                       term=='R1DEMOVATE10' ~ 'Selvopplevd politisk innflytelse',
+                                       term=='R1DEMOVATE11' ~ 'Selvopplevd politisk innsikt',
+                                       term=='R1DEMOVATE12' ~ 'Selvplassering på politisk skala'
+                                       ))
+
+gt(ols) %>%
+   tab_header(title = 'Redusere økonomiske forskjeller',
+              subtitle = 'Regresjonsanalyse') %>%
+   cols_label(term = 'Variabel',
+              estimate = 'Koeffisient',
+              std.error = 'Standardfeil',
+              statistic = 't-verdi',
+              p.value = 'p-verdi') %>% 
+  fmt_number(columns = vars(estimate, std.error, statistic, p.value),
+             decimals = 2) %>% 
+  tab_row_group(., group = 'Bydel (Sentrum som referansekategori)', rows = 2:4) %>% 
+  tab_row_group(., group = 'Kjønn (Kvinne som referansekategori)', rows = 5) %>% 
+  tab_row_group(., group = 'Alder (Under 30 år som referansekategori)', rows = 6:8) %>%
+    tab_row_group(., group = 'Utdanning (Grunnskole som referansekategori)', rows = 9:11) %>%    tab_options(table.width = "75%",               table.font.size = "12px",               row_group.background.color = '#f2f2f2', table.align = 'left' )
+```
+
+## Tiggerforbud
+> Det bør innføres forbud mot tigging på gaten i Bergen.
+
+```{r tigging_fig}
+p1 <- d %>% ggplot(aes(x = R1DEMOVATE5)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Tiggerforbud i Bergen', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) 
+
+p2 <- d %>% ggplot(aes(x = R1DEMOVATE5)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Tiggerforbud i Bergen', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Bydel, ncol=1)
+
+p3 <- d %>% ggplot(aes(x = R1DEMOVATE5)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Tiggerforbud i Bergen', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Aldersgrupper, ncol=1)
+
+p4 <- d %>% ggplot(aes(x = R1DEMOVATE5)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Tiggerforbud i Bergen', y='Prosent') + 
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Utdanning, ncol=1)
+
+p5 <- d %>% ggplot(aes(x = R1DEMOVATE5)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Tiggerforbud i Bergen', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+  facet_wrap(~ Kjonn, ncol=1)
+
+p6 <- d %>% ggplot(aes(x= R1DEMOVATE12, y=R1DEMOVATE5)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE12)) +
+  labs(y='Tiggerforbud i Bergen', x='Selvplassering på høyre/venstre-skala') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nVenstre', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nHøyre')) 
+
+p7 <- d %>% ggplot(aes(x= R1DEMOVATE10, y=R1DEMOVATE5)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE10)) +
+  labs(y='Tiggerforbud i Bergen', x='Opplevd påvirkningskraft') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nMotsetter meg \n det fullstendig', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nStøtter det \nfullstendig')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIkke i \ndet hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFullt \nog helt')) 
+
+p1
+p3+p4
+p5+p2
+p6+p7
+```
+
+Bergenserne er delt i synet på tigging.
+Et lite flertall motsetter seg et tiggerforbud i kommunen, og mostanden er sterkest blant menn og blant sentrumsbeboere.
+```{r tigging_reg}
+
+ols <- lm(R1DEMOVATE5 ~ Bydel + Kjonn + Aldersgrupper +  Utdanning + R1DEMOVATE10 + R1DEMOVATE11 + R1DEMOVATE12, data = d)
+ols <- broom::tidy(ols) 
+ols <- tibble(ols)
+ols <- ols %>% mutate(term = case_when(term=='(Intercept)' ~ 'Skjæringspunkt',
+                                       term=='BydelFana og Ytrebygda' ~ 'Fana og Ytrebygda',
+                                       term=='BydelArna og Åsane' ~ 'Arna og Åsane',
+                                       term=='BydelBergen Vest' ~ 'Bergen Vest',
+                                       term=='KjonnMann' ~ 'Mann',
+                                       term=='Aldersgrupper30-44 år' ~ '30-44 år',
+                                       term=='Aldersgrupper45-59 år' ~ '45-59 år',
+                                       term=='Aldersgrupper60 år og eldre' ~ '60 år og eldre',
+                                       term=='UtdanningVideregående' ~ 'Videregående',
+                                       term=='UtdanningUniversitet/høyskole (inntil 2 år)' ~ 'Universitet/høyskole (inntil 2 år)',
+                                       term=='UtdanningUniversitet/høyskole (mer enn 2 år)' ~ 'Universitet/høyskole (mer enn 2 år)',
+                                       term=='R1DEMOVATE19' ~ 'Inntekt',
+                                       term=='R1DEMOVATE10' ~ 'Selvopplevd politisk innflytelse',
+                                       term=='R1DEMOVATE11' ~ 'Selvopplevd politisk innsikt',
+                                       term=='R1DEMOVATE12' ~ 'Selvplassering på politisk skala'
+                                       ))
+
+gt(ols) %>%
+   tab_header(title = 'Tiggerforbud i Bergen',
+              subtitle = 'Regresjonsanalyse') %>%
+   cols_label(term = 'Variabel',
+              estimate = 'Koeffisient',
+              std.error = 'Standardfeil',
+              statistic = 't-verdi',
+              p.value = 'p-verdi') %>% 
+  fmt_number(columns = vars(estimate, std.error, statistic, p.value),
+             decimals = 2) %>% 
+  tab_row_group(., group = 'Bydel (Sentrum som referansekategori)', rows = 2:4) %>% 
+  tab_row_group(., group = 'Kjønn (Kvinne som referansekategori)', rows = 5) %>% 
+  tab_row_group(., group = 'Alder (Under 30 år som referansekategori)', rows = 6:8) %>%
+    tab_row_group(., group = 'Utdanning (Grunnskole som referansekategori)', rows = 9:11) %>%    tab_options(table.width = "75%",               table.font.size = "12px",               row_group.background.color = '#f2f2f2') %>% 
+  tab_options(table.width = "75%",
+              table.font.size = "12px",
+              row_group.background.color = '#f2f2f2',
+              table.align = 'left') 
+
+```
+
+# Tillit
+## Tillit til politikere i Bergen
+> Hvilken tillit har du generelt sett til politikerne i Bergen kommune?
+
+```{r Politikertillit_fig}
+p1 <- d %>% ggplot(aes(x = R1DEMOVATE8)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Tillit til politikere i Bergen', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) 
+
+p2 <- d %>% ggplot(aes(x = R1DEMOVATE8)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Tillit til politikere i Bergen', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Bydel, ncol=1)
+
+p3 <- d %>% ggplot(aes(x = R1DEMOVATE8)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Tillit til politikere i Bergen', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Aldersgrupper, ncol=1)
+
+p4 <- d %>% ggplot(aes(x = R1DEMOVATE8)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Tillit til politikere i Bergen', y='Prosent') + 
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Utdanning, ncol=1)
+
+p5 <- d %>% ggplot(aes(x = R1DEMOVATE8)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Tillit til politikere i Bergen', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Kjonn, ncol=1)
+
+p6 <- d %>% ggplot(aes(x= R1DEMOVATE12, y=R1DEMOVATE8)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE12)) +
+  labs(y='Tillit til politikere i Bergen', x='Selvplassering på høyre/venstre-skala') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nVenstre', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nHøyre')) 
+
+p7 <- d %>% ggplot(aes(x= R1DEMOVATE10, y=R1DEMOVATE8)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE10)) +
+  labs(y='Tillit til politikere i Bergen', x='Opplevd påvirkningskraft') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIkke i \ndet hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFullt \nog helt')) 
+
+p1
+p3+p4
+p5+p2
+p6+p7
+```
+
+Lokalpolitikerne nyter forholdsvis høy tillit blant innbyggerne i kommunen.
+På en skala fra 0 (lavest) til 10, scorer politikerne et gjennomsnitt på `r round(mean(d$R1DEMOVATE8, na.rm=TRUE), digits = 1)`.
+Tilliten er noe høyere blant høyere utdannede og blant yngre, samt blant respondenter som plasserer seg til venstre på den politiske skalaen.
+Framfor alt er imidlertid opplevelsen av egen mulighet til å påvirke lokale myndigheter sterkt assosiert med politisk tillit.
+De som scorer høyt på denne skalaen har også gjennomgående høy tillit til Bergens politikere.
+
+```{r Politikertillit_reg}
+
+ols <- lm(R1DEMOVATE8 ~ Bydel + Kjonn + Aldersgrupper +  Utdanning + R1DEMOVATE10 + R1DEMOVATE11 + R1DEMOVATE12, data = d)
+ols <- broom::tidy(ols)
+ols <- ols %>% mutate(term = case_when(term=='(Intercept)' ~ 'Skjæringspunkt',
+                                       term=='BydelFana og Ytrebygda' ~ 'Fana og Ytrebygda',
+                                       term=='BydelArna og Åsane' ~ 'Arna og Åsane',
+                                       term=='BydelBergen Vest' ~ 'Bergen Vest',
+                                       term=='KjonnMann' ~ 'Mann',
+                                       term=='Aldersgrupper30-44 år' ~ '30-44 år',
+                                       term=='Aldersgrupper45-59 år' ~ '45-59 år',
+                                       term=='Aldersgrupper60 år og eldre' ~ '60 år og eldre',
+                                       term=='UtdanningVideregående' ~ 'Videregående',
+                                       term=='UtdanningUniversitet/høyskole (inntil 2 år)' ~ 'Universitet/høyskole (inntil 2 år)',
+                                       term=='UtdanningUniversitet/høyskole (mer enn 2 år)' ~ 'Universitet/høyskole (mer enn 2 år)',
+                                       term=='R1DEMOVATE19' ~ 'Inntekt',
+                                       term=='R1DEMOVATE10' ~ 'Selvopplevd politisk innflytelse',
+                                       term=='R1DEMOVATE11' ~ 'Selvopplevd politisk innsikt',
+                                       term=='R1DEMOVATE12' ~ 'Selvplassering på politisk skala'
+                                       ))
+
+gt(ols) %>%
+   tab_header(title = 'Tillit til politikere i Bergen',
+              subtitle = 'Regresjonsanalyse') %>%
+   cols_label(term = 'Variabel',
+              estimate = 'Koeffisient',
+              std.error = 'Standardfeil',
+              statistic = 't-verdi',
+              p.value = 'p-verdi') %>% 
+  fmt_number(columns = vars(estimate, std.error, statistic, p.value),
+             decimals = 2) %>% 
+  tab_row_group(., group = 'Bydel (Sentrum som referansekategori)', rows = 2:4) %>% 
+  tab_row_group(., group = 'Kjønn (Kvinne som referansekategori)', rows = 5) %>% 
+  tab_row_group(., group = 'Alder (Under 30 år som referansekategori)', rows = 6:8) %>%
+    tab_row_group(., group = 'Utdanning (Grunnskole som referansekategori)', rows = 9:11) %>%    tab_options(table.width = "75%",               table.font.size = "12px",               row_group.background.color = '#f2f2f2', table.align = 'left' )
+```
+
+## Tillit til byråkratiet i Bergen kommune
+>Hvilken tillit har du generelt sett til byråkratiet i Bergen kommune?
+
+```{r Forvaltningstillit_fig}
+p1 <- d %>% ggplot(aes(x = R1DEMOVATE89)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Byråkratiet i Bergen kommune', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) 
+
+p2 <- d %>% ggplot(aes(x = R1DEMOVATE89)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Byråkratiet i Bergen kommune', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Bydel, ncol=1)
+
+p3 <- d %>% ggplot(aes(x = R1DEMOVATE89)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Byråkratiet i Bergen kommune', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Aldersgrupper, ncol=1)
+
+p4 <- d %>% ggplot(aes(x = R1DEMOVATE89)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Byråkratiet i Bergen kommune', y='Prosent') + 
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Utdanning, ncol=1)
+
+p5 <- d %>% ggplot(aes(x = R1DEMOVATE89)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Byråkratiet i Bergen kommune', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Kjonn, ncol=1)
+
+p6 <- d %>% ggplot(aes(x= R1DEMOVATE12, y=R1DEMOVATE89)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE12)) +
+  labs(y='Byråkratiet i Bergen kommune', x='Selvplassering på høyre/venstre-skala') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nVenstre', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nHøyre')) 
+
+p7 <- d %>% ggplot(aes(x= R1DEMOVATE10, y=R1DEMOVATE89)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE10)) +
+  labs(y='Byråkratiet i Bergen kommune', x='Opplevd påvirkningskraft') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIkke i \ndet hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFullt \nog helt')) 
+
+p1
+p3+p4
+p5+p2
+p6+p7
+```
+
+Tilliten til byråkratiet i Bergen følger politikertilliten tett.
+På en skala fra 0 (lavest) til 10, scorer forvaltningen et gjennomsnitt på `r round(mean(d$R1DEMOVATE89, na.rm=TRUE), digits = 1)`.
+Tilliten er noe høyere blant høyere utdannede og blant yngre, samt blant respondenter som plasserer seg til venstre på den politiske skalaen.
+Framfor alt er imidlertid opplevelsen av egen mulighet til å påvirke lokale myndigheter sterkt assosiert med politisk tillit.
+De som scorer høyt på denne skalaen har også gjennomgående høy tillit til Bergens politikere.
+
+```{r Forvaltningstillit_reg}
+
+ols <- lm(R1DEMOVATE89 ~ Bydel + Kjonn + Aldersgrupper +  Utdanning + R1DEMOVATE10 + R1DEMOVATE11 + R1DEMOVATE12, data = d)
+ols <- broom::tidy(ols)
+ols <- ols %>% mutate(term = case_when(term=='(Intercept)' ~ 'Skjæringspunkt',
+                                       term=='BydelFana og Ytrebygda' ~ 'Fana og Ytrebygda',
+                                       term=='BydelArna og Åsane' ~ 'Arna og Åsane',
+                                       term=='BydelBergen Vest' ~ 'Bergen Vest',
+                                       term=='KjonnMann' ~ 'Mann',
+                                       term=='Aldersgrupper30-44 år' ~ '30-44 år',
+                                       term=='Aldersgrupper45-59 år' ~ '45-59 år',
+                                       term=='Aldersgrupper60 år og eldre' ~ '60 år og eldre',
+                                       term=='UtdanningVideregående' ~ 'Videregående',
+                                       term=='UtdanningUniversitet/høyskole (inntil 2 år)' ~ 'Universitet/høyskole (inntil 2 år)',
+                                       term=='UtdanningUniversitet/høyskole (mer enn 2 år)' ~ 'Universitet/høyskole (mer enn 2 år)',
+                                       term=='R1DEMOVATE19' ~ 'Inntekt',
+                                       term=='R1DEMOVATE10' ~ 'Selvopplevd politisk innflytelse',
+                                       term=='R1DEMOVATE11' ~ 'Selvopplevd politisk innsikt',
+                                       term=='R1DEMOVATE12' ~ 'Selvplassering på politisk skala'
+                                       ))
+
+gt(ols) %>%
+   tab_header(title = 'Byråkratiet i Bergen kommune',
+              subtitle = 'Regresjonsanalyse') %>%
+   cols_label(term = 'Variabel',
+              estimate = 'Koeffisient',
+              std.error = 'Standardfeil',
+              statistic = 't-verdi',
+              p.value = 'p-verdi') %>% 
+  fmt_number(columns = vars(estimate, std.error, statistic, p.value),
+             decimals = 2) %>% 
+  tab_row_group(., group = 'Bydel (Sentrum som referansekategori)', rows = 2:4) %>% 
+  tab_row_group(., group = 'Kjønn (Kvinne som referansekategori)', rows = 5) %>% 
+  tab_row_group(., group = 'Alder (Under 30 år som referansekategori)', rows = 6:8) %>%
+    tab_row_group(., group = 'Utdanning (Grunnskole som referansekategori)', rows = 9:11) %>%    tab_options(table.width = "75%",               table.font.size = "12px",               row_group.background.color = '#f2f2f2', table.align = 'left' )
+```
+
+## Tillit til bergenske nyhetsmedier
+> Hvilken tillit har du generelt sett til bergenske nyhetsmedier?
+
+```{r Medietillit_fig}
+p1 <- d %>% ggplot(aes(x = R1DEMOVATE9)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Bergenske nyhetsmedier', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) 
+
+p2 <- d %>% ggplot(aes(x = R1DEMOVATE9)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+  labs(x='Bergenske nyhetsmedier', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Bydel, ncol=1)
+
+p3 <- d %>% ggplot(aes(x = R1DEMOVATE9)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Bergenske nyhetsmedier', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Aldersgrupper, ncol=1)
+
+p4 <- d %>% ggplot(aes(x = R1DEMOVATE9)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Bergenske nyhetsmedier', y='Prosent') + 
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Utdanning, ncol=1)
+
+p5 <- d %>% ggplot(aes(x = R1DEMOVATE9)) +
+  geom_bar(aes(y = after_stat(prop*100))) +
+   labs(x='Bergenske nyhetsmedier', y='Prosent') +
+  scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+  facet_wrap(~ Kjonn, ncol=1)
+
+p6 <- d %>% ggplot(aes(x= R1DEMOVATE12, y=R1DEMOVATE9)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE12)) +
+  labs(y='Bergenske nyhetsmedier', x='Selvplassering på høyre/venstre-skala') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nVenstre', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nHøyre')) 
+
+p7 <- d %>% ggplot(aes(x= R1DEMOVATE10, y=R1DEMOVATE9)) +
+  geom_count(aes(size=after_stat(prop), group=R1DEMOVATE10)) +
+  labs(y='Bergenske nyhetsmedier', x='Opplevd påvirkningskraft') +
+  scale_y_continuous(breaks = c(0:10),
+                     labels= c('0 \nIngen tillit \ni det hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFull tillit')) +
+scale_x_continuous(breaks = c(0:10),
+                     labels= c('0 \nIkke i \ndet hele tatt', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \nFullt \nog helt')) 
+
+p1
+p3+p4
+p5+p2
+p6+p7
+```
+
+Bergenske nyhetsmedier nyter høy tillit i befolkningen, og høyere enn politikerne gjør. 
+På en skala fra 0 (lavest) til 10, scorer media et gjennomsnitt på `r round(mean(d$R1DEMOVATE9, na.rm=TRUE), digits = 1)`.
+Kvinner har noe høyere tillit til media enn menn, men eller er ikke store forskjeller mellom sosiale grupper eller respondentenes politiske ståsted.
+Igjen har selvopplevd politisk påvirkningskraft mye å si for tillit, der de som opplever at de kan påvirke lokale myndigheter også har høyere tillit til media.
+
+```{r Medietillit_reg}
+
+ols <- lm(R1DEMOVATE9 ~ Bydel + Kjonn + Aldersgrupper +  Utdanning + R1DEMOVATE10 + R1DEMOVATE11 + R1DEMOVATE12, data = d)
+ols <- broom::tidy(ols)
+ols <- ols %>% mutate(term = case_when(term=='(Intercept)' ~ 'Skjæringspunkt',
+                                       term=='BydelFana og Ytrebygda' ~ 'Fana og Ytrebygda',
+                                       term=='BydelArna og Åsane' ~ 'Arna og Åsane',
+                                       term=='BydelBergen Vest' ~ 'Bergen Vest',
+                                       term=='KjonnMann' ~ 'Mann',
+                                       term=='Aldersgrupper30-44 år' ~ '30-44 år',
+                                       term=='Aldersgrupper45-59 år' ~ '45-59 år',
+                                       term=='Aldersgrupper60 år og eldre' ~ '60 år og eldre',
+                                       term=='UtdanningVideregående' ~ 'Videregående',
+                                       term=='UtdanningUniversitet/høyskole (inntil 2 år)' ~ 'Universitet/høyskole (inntil 2 år)',
+                                       term=='UtdanningUniversitet/høyskole (mer enn 2 år)' ~ 'Universitet/høyskole (mer enn 2 år)',
+                                       term=='R1DEMOVATE19' ~ 'Inntekt',
+                                       term=='R1DEMOVATE10' ~ 'Selvopplevd politisk innflytelse',
+                                       term=='R1DEMOVATE11' ~ 'Selvopplevd politisk innsikt',
+                                       term=='R1DEMOVATE12' ~ 'Selvplassering på politisk skala'
+                                       ))
+
+gt(ols) %>%
+   tab_header(title = 'Bergenske nyhetsmedier',
+              subtitle = 'Regresjonsanalyse') %>%
+   cols_label(term = 'Variabel',
+              estimate = 'Koeffisient',
+              std.error = 'Standardfeil',
+              statistic = 't-verdi',
+              p.value = 'p-verdi') %>% 
+  fmt_number(columns = vars(estimate, std.error, statistic, p.value),
+             decimals = 2) %>% 
+  tab_row_group(., group = 'Bydel (Sentrum som referansekategori)', rows = 2:4) %>% 
+  tab_row_group(., group = 'Kjønn (Kvinne som referansekategori)', rows = 5) %>% 
+  tab_row_group(., group = 'Alder (Under 30 år som referansekategori)', rows = 6:8) %>%
+    tab_row_group(., group = 'Utdanning (Grunnskole som referansekategori)', rows = 9:11) %>%    tab_options(table.width = "75%",               table.font.size = "12px",               row_group.background.color = '#f2f2f2', table.align = 'left' )  
+```
+
+
+# Byborgerpanel
+## Deltakelse 
+
+Respondentene ble bedt om å ta stilling til dette scenariet:
+
+-------------------------------------------------------------------------------------------------------------
+Bergen kommune har bestemt seg for å gjennomføre såkalte borgerpaneler i tiden framover. Dette er en ordning hvor en gruppe innbyggere i kommunen blir invitert til å diskutere og gjøre seg opp en mening om en politisk sak. Jeg skal lese opp noen måter dette borgerpanelet kan gjennomføres på, og vil gjerne vite hvor sannsynlig det er at du ville ha deltatt om det ble gjennomført slik jeg beskriver:
+
+Borgerpanelet består av *|Deltakerantall* deltakere, finner sted i Bergen sentrum på en *|Dag*, og varer i 7 timer. 
+Deltakerne blir *|Kompensasjon* for å være med.
+*|Rekrutteringsform *
+Saken som skal diskuteres er *|Sak*. 
+Deltakerne bestemmer seg ut fra *|Beslutningsgrunnlag*.
+Deltakerne stemmer så over saken, og resultatet blir formidlet til kommunens politikere.
+*|Offentliggjøring*. 
+
+-------------------------------------------------------------------------------------------------------------
+
+Hvor mange prosents sannsynlighet er det for at du ville ha deltatt i et slikt borgerpanel?
+
+```{r deltakelse}
+source("amce.R")
+
+
+
+main_01 <-  d %>% select(IntervjuID, 
+                         starts_with('R1DEMOVATE6') & ends_with('1')) %>% 
+  rename_at(vars(ends_with("1")), 
+            funs(str_replace(., "R1", ""))) %>% 
+  rename_at(vars(ends_with("1")), 
+                                 funs(str_replace(., "1", "")))
+main_02 <-  d %>% select(IntervjuID, 
+                         starts_with('R1DEMOVATE6') & ends_with('2'))  %>% 
+  rename_at(vars(ends_with("2")), 
+            funs(str_replace(., "R1", ""))) %>% 
+  rename_at(vars(ends_with("2")), 
+                                 funs(str_replace(., "2", "")))
+main_03 <-  d %>% select(IntervjuID, 
+                         starts_with('R1DEMOVATE6') & ends_with('3'))   %>% 
+  rename_at(vars(ends_with("3")), 
+            funs(str_replace(., "R1", ""))) %>% 
+  rename_at(vars(ends_with("3")), 
+                                 funs(str_replace(., "3", "")))
+
+main <- bind_rows(main_01, main_02, main_03)
+
+main <- main %>% mutate(DEMOVATE6_Antall = case_when(DEMOVATE6_Antall == 1 ~ '12',
+                                                     DEMOVATE6_Antall == 2 ~ '100',
+                                                     DEMOVATE6_Antall == 3 ~ '300',),
+                        DEMOVATE6_Antall = lvls_reorder(DEMOVATE6_Antall, c(2,1,3)),
+                        DEMOVATE6_Dag = case_when(DEMOVATE6_Dag == 1 ~ 'Hverdag',
+                                                  DEMOVATE6_Dag == 2 ~ 'Helgedag'),
+                        DEMOVATE6_Rekr = case_when(DEMOVATE6_Rekr == 1 ~ 'Selvseleksjon',
+                                                   DEMOVATE6_Rekr == 2 ~ 'Invitasjon, \n tilfeldig uttrekk'),
+                        DEMOVATE6_Komp = case_when(DEMOVATE6_Komp== 1 ~ 'Ingen',
+                                                   DEMOVATE6_Komp == 2 ~ 'Kr. 200/timen',
+                                                   DEMOVATE6_Komp == 3 ~ 'Kr. 500/timen',
+                                                   DEMOVATE6_Komp == 4 ~ 'Kr. 1000/timen'),
+                        DEMOVATE6_Sak = case_when(DEMOVATE6_Sak == 1 ~ 'Store Lungegårdsvann',
+                                                  DEMOVATE6_Sak == 2 ~ 'Tiggerforbud',
+                                                  DEMOVATE6_Sak == 3 ~ 'Turistskatt'),
+                        DEMOVATE6_Grunnlag = case_when(DEMOVATE6_Grunnlag == 1 ~ 'Egne vurderinger',
+                                                       DEMOVATE6_Grunnlag == 2 ~ 'Informasjon fra uavhengige eksperter',
+                                                       DEMOVATE6_Grunnlag == 3 ~ 'Deliberasjon'),
+                        DEMOVATE6_Offentlig = case_when(DEMOVATE6_Offentlig == 1 ~ 'Offentlig avstemning',
+                                                        DEMOVATE6_Offentlig == 2 ~ 'Hemmelig avstemning')
+                        )
+
+res_main <-  main %>%
+  amce(DEMOVATE6_, DEMOVATE6_Antall, DEMOVATE6_Dag, DEMOVATE6_Rekr, DEMOVATE6_Komp, DEMOVATE6_Sak, DEMOVATE6_Grunnlag, DEMOVATE6_Offentlig) 
+
+res_main <- res_main %>% 
+  mutate(
+  treatment =  case_when(treatment == "DEMOVATE6_Antall" ~ "Deltakerantall",
+            treatment == "DEMOVATE6_Dag" ~ "Dag",
+            treatment == "DEMOVATE6_Rekr" ~ "Rekrutteringsform",
+            treatment == "DEMOVATE6_Komp" ~ "Kompensasjon",
+            treatment == "DEMOVATE6_Sak" ~ "Sak",
+            treatment == "DEMOVATE6_Grunnlag" ~ "Beslutningssgrunnlag",
+            treatment == "DEMOVATE6_Offentlig" ~ "Offentliggjøring"))
+
+fig_amce <-
+  res_main %>%
+  ggplot(aes(x = estimate, y = value)) +
+  facet_grid(
+    treatment ~ .,
+    scales = "free_y",
+    space = "free_y") +
+  geom_errorbarh(
+    aes(xmin = estimate - (2 * std_error),
+        xmax = estimate + (2 * std_error)),
+    height = 0) +
+  geom_point() +
+  geom_vline(aes(xintercept = 0), linetype = "dotted") +
+  scale_x_continuous(
+    limits = c(-40, 40),
+    breaks = round(seq(-40, 40, 5), 5),
+    expand = c(0, 0)) +
+    labs(
+    x = "Sannsynlighet for deltakelse",
+    y = "") +
+  theme_bw() +
+  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=6, angle=0) ,      axis.text.x=element_text(size=rel(0.7)))
+fig_amce
+```
+
+Resultatene fra eksperimentet viser at respondentene blir mer positive til å delta hvis de får en økonomisk kompensasjon.
+Imidlertid må denne være veldig høy før deltakelsen blir signifikant høyere.
+
+For øvrig er det ingen statistisk signifikante effekter, men likevel noen tendenser i utvalget som er verdt å merke seg.
+Det spiller i følge respondentene ingen rolle om borgerpanelet arrangeres på en hverdag eller helg, eller om man kan melde seg på selv eller ikke.
+Turistskatt virker å være en foretrukket sak over de to andre alternativene som var med i eksperimentet.
+
+Til sist er respondentene mindre tilbøyelig til å delta dersom deres holdninger blir offentliggjort.
+Dette er interessant i sammenlikning med det neste eksperimentet, som måler legimititeten til borgerpanelet. 
+Der er det nemlig motsatt, slik at respondentene mener at et borgerpanel som offentliggjør deltakernes holdninger bør vektlegges i sterkere grad av politikerne enn et borgerpanel som holder deres meninger hemmelige.
+
+## Legitimitet
+
+Dette andre eksperimentet er tilnærmet identisk med det første.
+Forskjellen er at respondentene blir spurt hvor mye vekt politikerne skal legge på resultatet om det ble gjennomført.
+
+-------------------------------------------------------------------------------------------------------------
+Bergen kommune har bestemt seg for å gjennomføre såkalte borgerpaneler i tiden framover. Dette er en ordning hvor en gruppe innbyggere i kommunen blir invitert til å diskutere og gjøre seg opp en mening om en politisk sak. Jeg skal lese opp noen måter dette borgerpanelet kan gjennomføres på, og vil gjerne vite hvor mye vekt politikerne skal legge på resultatet om det ble gjennomført slik jeg beskriver: 
+
+Borgerpanelet består av *|Deltakerantall* deltakere, finner sted i Bergen sentrum på en *|Dag*, og varer i 7 timer. 
+Deltakerne blir *|Kompensasjon* for å være med.
+*|Rekrutteringsform *
+Saken som skal diskuteres er *|Sak*. 
+Deltakerne bestemmer seg ut fra *|Beslutningsgrunnlag*.
+Deltakerne stemmer så over saken, og resultatet blir formidlet til kommunens politikere.
+*|Offentliggjøring*. 
+
+-------------------------------------------------------------------------------------------------------------
+På en skala fra 0 til 10, der 0 betyr at resultatet ikke skal vektlegges i det hele tatt, og 10 betyr at resultatet skal følges uansett. Hvor mye mener du resultatet fra borgerpanelet skal vektlegges når politikerne skal fatte den endelige beslutningen i saken?
+
+```{r legitmitet}
+source("amce.R")
+
+main_01 <-  d %>% select(IntervjuID, 
+                         starts_with('R1DEMOVATE7') & ends_with('1')) %>% 
+  rename_at(vars(ends_with("1")), 
+            funs(str_replace(., "R1", ""))) %>% 
+  rename_at(vars(ends_with("1")), 
+                                 funs(str_replace(., "1", "")))
+main_02 <-  d %>% select(IntervjuID, 
+                         starts_with('R1DEMOVATE7') & ends_with('2'))  %>% 
+  rename_at(vars(ends_with("2")), 
+            funs(str_replace(., "R1", ""))) %>% 
+  rename_at(vars(ends_with("2")), 
+                                 funs(str_replace(., "2", "")))
+main_03 <-  d %>% select(IntervjuID, 
+                         starts_with('R1DEMOVATE7') & ends_with('3'))   %>% 
+  rename_at(vars(ends_with("3")), 
+            funs(str_replace(., "R1", ""))) %>% 
+  rename_at(vars(ends_with("3")), 
+                                 funs(str_replace(., "3", "")))
+
+main <- bind_rows(main_01, main_02, main_03)
+
+
+main <- main %>% mutate(DEMOVATE7_Antall = case_when(DEMOVATE7_Antall == 1 ~ '12',
+                                                     DEMOVATE7_Antall == 2 ~ '100',
+                                                     DEMOVATE7_Antall == 3 ~ '300',),
+                        DEMOVATE7_Antall = lvls_reorder(DEMOVATE7_Antall, c(2,1,3)),
+                        DEMOVATE7_Dag = case_when(DEMOVATE7_Dag == 1 ~ 'Hverdag',
+                                                  DEMOVATE7_Dag == 2 ~ 'Helgedag'),
+                        DEMOVATE7_Rekr = case_when(DEMOVATE7_Rekr == 1 ~ 'Selvseleksjon',
+                                                   DEMOVATE7_Rekr == 2 ~ 'Invitasjon, \n tilfeldig uttrekk'),
+                        DEMOVATE7_Komp = case_when(DEMOVATE7_Komp== 1 ~ 'Ingen',
+                                                   DEMOVATE7_Komp == 2 ~ 'Kr. 200/timen',
+                                                   DEMOVATE7_Komp == 3 ~ 'Kr. 500/timen',
+                                                   DEMOVATE7_Komp == 4 ~ 'Kr. 1000/timen'),
+                        DEMOVATE7_Sak = case_when(DEMOVATE7_Sak == 1 ~ 'Store Lungegårdsvann',
+                                                  DEMOVATE7_Sak == 2 ~ 'Tiggerforbud',
+                                                  DEMOVATE7_Sak == 3 ~ 'Turistskatt'),
+                        DEMOVATE7_Grunnlag = case_when(DEMOVATE7_Grunnlag == 1 ~ 'Egne vurderinger',
+                                                       DEMOVATE7_Grunnlag == 2 ~ 'Informasjon fra uavhengige eksperter',
+                                                       DEMOVATE7_Grunnlag == 3 ~ 'Deliberasjon'),
+                        DEMOVATE7_Offentlig = case_when(DEMOVATE7_Offentlig == 1 ~ 'Offentlig avstemning',
+                                                        DEMOVATE7_Offentlig == 2 ~ 'Hemmelig avstemning')
+                        )
+
+res_main <-  main %>%
+  amce(DEMOVATE7_, DEMOVATE7_Antall, DEMOVATE7_Dag, DEMOVATE7_Rekr, DEMOVATE7_Komp, DEMOVATE7_Sak, DEMOVATE7_Grunnlag, DEMOVATE7_Offentlig) 
+
+res_main <- res_main %>% 
+  mutate(
+  treatment =  case_when(treatment == "DEMOVATE7_Antall" ~ "Deltakerantall",
+            treatment == "DEMOVATE7_Dag" ~ "Dag",
+            treatment == "DEMOVATE7_Rekr" ~ "Rekrutteringsform",
+            treatment == "DEMOVATE7_Komp" ~ "Kompensasjon",
+            treatment == "DEMOVATE7_Sak" ~ "Sak",
+            treatment == "DEMOVATE7_Grunnlag" ~ "Beslutningssgrunnlag",
+            treatment == "DEMOVATE7_Offentlig" ~ "Offentliggjøring"))
+
+fig_amce <-
+  res_main %>%
+  ggplot(aes(x = estimate, y = value)) +
+  facet_grid(
+    treatment ~ .,
+    scales = "free_y",
+    space = "free_y") +
+  geom_errorbarh(
+    aes(xmin = estimate - (2 * std_error),
+        xmax = estimate + (2 * std_error)),
+    height = 0) +
+  geom_point() +
+  geom_vline(aes(xintercept = 0), linetype = "dotted") +
+  scale_x_continuous(
+    limits = c(-1.5, 1.5),
+    breaks = round(seq(-1.5, 1.5, 0.2), 2),
+    expand = c(0, 0)) +
+    labs(
+    x = "Legitimitet",
+    y = "") +
+  theme_bw() +
+  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=6, angle=0) ,      axis.text.x=element_text(size=rel(0.7)))
+fig_amce
+```
+
+Eksperimentet viser at respondentene er klart mer villig til å vektlegge et borgerpanel med et tresifret antall deltakere enn hvis det bare er 12 stykker.
+Det samme gjelder borgerpaneler som benytter seg av tilfeldig uttrekk.
+Disse to resultatene peker i retning av at folk er opptatt av at borgerpanelene skal være representative for innbyggernes syn.
+
+
+# Kodebok
+
+
+Respons Analyse opplyser i sin metoderapport følgende:
+
+---------------------------------------------------------------------------------------
+
+Respons Analyse har på oppdrag fra NORCE gjennomført en innbyggerundersøkelse i Bergen i perioden 16. desember 2019 – 13. januar 2020.
+Undersøkelsen er gjennomført på telefon. 
+Det er intervjuet 900 respondenter representativt for innbyggerne 18 år og eldre. 
+
+Spørreskjema er utarbeidet av NORCE og omhandler lokaldemokrati i Bergen. 
+Intervjuet var beregnet til 10 minutters gjennomsnittlig intervjutid. Det viste seg imidlertid at det tok litt lenger tid. 
+Gjennomsnittlig intervjutid viste seg å være 11,5 minutter.
+
+Utvalget er trukket fra Bisnodes register over private telefonnumre i Norge. Nedenfor har vi satt opp en oversikt over gjennomføringen og frafallet i undersøkelsen. 
+Vi har delt inn frafallet i følgende kategorier:
+
+- Ubesvart (6373 personer). Dette inneholder de vi har forsøkt å ringe uten at vi har fått kontakt med dem. 
+Dette er i all hovedsak at telefonen ikke bli besvart når vi ringer, men i noen tilfeller dreier det seg om tilfeller der vi har fått gjort en avtale om tilbakeringing, men at vedkommende da ikke er tilgjengelig eller til stede likevel. 
+Alle ubesvarte telefonnumre er lagt tilbake i utvalget og forsøkt oppringt igjen senere i intervjuperioden. 
+Antall tilbakeringinger på de som havner i kategorien ubesvart varierer fra 2-12. Der fleste ligger imidlertid mellom 2-5 tilbakeringinger.
+
+-	Nekt (4944 personer). Dette er personer vi har fått snakke med, men der denne ikke vil delta i undersøkelsen. 
+
+-	Utenfor målgruppen (188 personer). Dette gjelder personer som det ikke lar seg gjøre å gjennomføre intervju på en faglig forsvarlig måte. Dette kan gjelde personer som ikke forstår norsk helt eller delvis, personer som hører dårlig, demente, psykisk utviklingshemmede osv.
+
+-	Intervju (900 personer). Dette er ingen frafallsgrunn, men vi har tatt det med for å beskrive hvordan bruttoutvalget fordelte seg under gjennomføringen. Dette er de som svarte på undersøkelsen.
+
+Av 12405 i bruttoutvalget ble 900 intervjuet. Svarprosenten av de vi fikk kontakt med og som var i målgruppen er  15 %.
+Dette er litt lavere enn vanlig, men kan skyldes at omtrent halvparten av datainnsamlingen ble gjennomført i uken før jul. 
+Dette er tradisjonelt travle tider for folk, noe som nok kan gjøre at svarvilligheten er lavere enn normalt.
+---------------------------------------------------------------------------------------
+
+Under følger en detaljert beskrivelse av hele datasettet.
+Kodeboken er automatisk generert ved hjelp av R-pakken "codebook", noe som betyr at enkelte engelske ord ikke blir oversatt og at enkelte ikke er optimalisert for visning.
+Vær oppmerksom på at mer informasjon ligger skjult i fanene.
+
+```{r kodebok, echo=FALSE, message=FALSE, warning=FALSE}
+e <- detect_missing(e,
+    only_labelled = TRUE, # only labelled values are autodetected as
+                                   # missing
+    negative_values_are_missing = FALSE, # negative values are NOT mi ssing values
+    ninety_nine_problems = TRUE,   # 99/999 are missing values, if they
+                                   # are more than 5 MAD from the median
+    )
+
+e <- e %>% select(-c(kommnr, IntervjuID, R1DEMOVATE22, R1DEMOVATE24, starts_with('R1DEMOVATE6'), o_R1DEMOVATE13, o_R1DEMOVATE23, vekt, starts_with('R1DEMOVATE7')))
+
+codebook(e)
+```
+
+```{r sessioninfo}
+sessionInfo()
+```

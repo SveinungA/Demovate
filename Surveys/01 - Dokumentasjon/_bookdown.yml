@@ -1,0 +1,14 @@
+book_filename: "DEMOVATE"
+before_chapter_script: "before_script1.R"
+after_chapter_script: "after_script1.R"
+language:
+  label:
+    fig: "Figur "
+    tab: "Tabell "
+    eq: "Formel "
+    thm: "Teorem "
+    lem: "Lemma "
+  ui:
+    chapter_name: "Kapittel "
+delete_merged_file: true
+rmd_files: ["index.Rmd", "01-intro.Rmd", "02-skalaspm.Rmd", "03-eksperimenter.Rmd"]

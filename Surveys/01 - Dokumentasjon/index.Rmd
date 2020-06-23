@@ -1,0 +1,56 @@
+--- 
+title: "DEMOVATE Survey 2020"
+author: "Daniel Instebø og Sveinung Arnesen"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+#bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+always_allow_html: true
+github-repo: rstudio/bookdown-demo
+description: "Dette er en digital bok som viser dokumentasjon og analyser av DEMOVATE Survey gjennomført Desember 2019 - Januar 2020."
+---
+
+# Oversikt {-#Oversikt}
+
+Dette er en digital dokumentasjonsrapport og analyser av DEMOVATE Survey gjennomført 16. Desember 2019 - 13. Januar 2020. Gjennomføringen av analysen er gjennomført av Respons Analyse på oppdrag fra NORCE. Undersøkelsen er gjennomført på telefon hvor det er gjennomført et representativt utvalg av innbyggere 18 år og eldre.
+
+Undersøkelsen omhandler lokaldemokrati i Bergen og inneholder 7 bakgrunnsspørsmål, 2 conjoint-eksperimenter og ulike holdningsspørsmål. Intervjuene var beregnet til å vare i 10 minutter i gjennomsnitt. I etterkant viste det seg at dette tok litt lenger tid med et gjennomsnitt på 11,5 minutter. 
+
+## Utvalg og frafall {-#Utvalg-og-frafall}
+
+Utvalget er trukket fra Bisnodes register over private telefonnumre i Norge. Nedenfor er en oversikt over gjennomføring og frafall i undersøkelsen. Dette er delt inn i kategoriene *Ubesvart*, *Nekt*, *Utenfor målgruppen* og *Intervju*.
+
+* *Ubesvart:* Personer forsøkt oppringt uten å oppnå kontakt.
+* *Nekt:* Personer som ikke ønsker delta i undersøkelsen.
+* *Utenfor målgruppen:* Personer som ikke lar seg intervjue på en faglig forsvarlig måte. Dette kan gjelde personer som ikke forstår norsk helt eller delvis, personer som hører dårlig, eller personer som ellers gir uttrykk for å ikke forstå undersøkelsen.
+
+På bakgrunn av dette kan vi oppsummere frafallet:
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+library(kableExtra)
+library(tidyverse)
+Kategori <- c("Ubesvart", "Nekt", "Utenfor Målgruppen", "Intervju", "Sum brutto")
+Utfall <- c(6373, 4944, 188, 900, 12405)
+utvalg <- data.frame(Kategori, Utfall)
+# ----
+
+utvalg %>%
+  kable() %>%
+  kable_styling()
+
+```
+
+Svarprosenten kan regnes ut ved å dele summen av de som lot seg intervjue på summen av de som lot seg intervjue pluss de som nektet. For denne undersøkelsen er svarprosenten 15.4%, noe som er litt mindre enn vanlig. Dette kan imidlertid ses i sammenheng med at dato for datainnsamlingen ble gjennomført tett opp mot jul. Siden dette er en travel tid kan det hende at svarvilligheten var noe lavere enn normalt.
+
+## Instruksjoner til intervjuer {-#Instruksjoner-til-intervjuer}
+
+*Kanskje dette skal i appendix istedetfor*
+
+For å sikre så god datakvalitet som mulig er instruksjonene til intervjuerne standardisert i så stor grad som mulig. Henvendelsene til respondenten starter med at intervjuerne leser opp en fastlagt intro:
+
+*God kveld, mitt navn er [...], og jeg ringer fra Respons Analyse i forbindelse med en spørreundersøkelse vi gjennomfører for Norwegian Research Centre og Universitetet i Bergen. Vi er i denne undersøkelsen interessert i hva innbyggerne i Bergen mener om ulike forhold og saker i Bergen. Alle svarene dine vil bli behandlet konfidensielt. 
+Kunne du tenke deg å svare på noen spørmål? Det tar ca. 10 minutter*
+

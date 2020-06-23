@@ -1,0 +1,213 @@
+# Hikke
+
+```{r echo = FALSE, warning = FALSE, message= FALSE}
+library(tidyverse)
+library(kableExtra)
+library(haven)
+library(janitor)
+library(data.table)
+library(cregg)
+
+# GGplot:
+theme_set(theme_bw())
+
+# Data:
+d <- read_sav("responsanalyse.SAV")
+
+variables_with_labels = map(d, function(x) attr(x, "class") == "haven_labelled") %>% unlist() %>%  names()
+d_factored = d %>% mutate_at( vars(variables_with_labels), as_factor)
+
+d_factored <- d_factored %>%
+  mutate(
+         # Characters:
+         Bydel = as.character(Bydel),
+         bydel_8 = as.character(bydel_8),
+         R1DEMOVATE21 = as.character(R1DEMOVATE21),
+         aldrkat = as.character(aldrkat),
+         R1DEMOVATE16 = as.character(R1DEMOVATE16),
+         R1DEMOVATE18 = as.character(R1DEMOVATE18),
+         R1DEMOVATE19 = as.character(R1DEMOVATE19),
+         R1DEMOVATE15 = as.character(R1DEMOVATE15),
+         
+         # Numerics:
+         R1DEMOVATE7_1 = as.numeric(R1DEMOVATE7_1),
+         R1DEMOVATE7_2 = as.numeric(R1DEMOVATE7_2),
+         R1DEMOVATE7_3 = as.numeric(R1DEMOVATE7_3))
+
+
+## Edit a few wrongs:
+d_factored[d_factored$o_R1DEMOVATE13 == "BOMPENGE","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "BOMPENGEPARTIET","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "folkje askjon mot bompenger","R1DEMOVATE13"] <- "Folkeaksjonen Nei til mer bompenger (FNB)"
+d_factored[d_factored$o_R1DEMOVATE13 == "De kristine'","R1DEMOVATE13"] <- "Partiet De Kristne"
+```
+
+## Eksperiment 1
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Dv:
+dv <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_1, R1DEMOVATE6_2, R1DEMOVATE6_3) %>%
+  filter(!is.na(R1DEMOVATE6_1) & !is.na(R1DEMOVATE6_2) & !is.na(R1DEMOVATE6_3)) %>%
+  filter(R1DEMOVATE6_1 != 999, R1DEMOVATE6_2 != 999, R1DEMOVATE6_3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_1, R2 = R1DEMOVATE6_2, R3 = R1DEMOVATE6_3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+#  mutate(Variabel = "dv") %>%
+  rename(Runde = variable, R1DEMOVATE6_dv = value)
+
+# Antall:
+antall <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Antall1, R1DEMOVATE6_Antall2, R1DEMOVATE6_Antall3) %>%
+  filter(!is.na(R1DEMOVATE6_Antall1) & !is.na(R1DEMOVATE6_Antall2) & !is.na(R1DEMOVATE6_Antall3)) %>%
+  filter(R1DEMOVATE6_Antall1 != 999, R1DEMOVATE6_Antall2 != 999, R1DEMOVATE6_Antall3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Antall1, R2 = R1DEMOVATE6_Antall2, R3 = R1DEMOVATE6_Antall3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_antall = value)
+
+# Dag:
+dag <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Dag1, R1DEMOVATE6_Dag2, R1DEMOVATE6_Dag3) %>%
+  filter(!is.na(R1DEMOVATE6_Dag1) & !is.na(R1DEMOVATE6_Dag2) & !is.na(R1DEMOVATE6_Dag3)) %>%
+  filter(R1DEMOVATE6_Dag1 != 999, R1DEMOVATE6_Dag2 != 999, R1DEMOVATE6_Dag3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Dag1, R2 = R1DEMOVATE6_Dag2, R3 = R1DEMOVATE6_Dag3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_dag = value)
+
+# Kompensasjon:
+komp <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Komp1, R1DEMOVATE6_Komp2, R1DEMOVATE6_Komp3) %>%
+  filter(!is.na(R1DEMOVATE6_Komp1) & !is.na(R1DEMOVATE6_Komp2) & !is.na(R1DEMOVATE6_Komp3)) %>%
+  filter(R1DEMOVATE6_Komp1 != 999, R1DEMOVATE6_Komp2 != 999, R1DEMOVATE6_Komp3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Komp1, R2 = R1DEMOVATE6_Komp2, R3 = R1DEMOVATE6_Komp3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_komp = value)
+
+# Rekruttering:
+rekruttering <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Rekr1, R1DEMOVATE6_Rekr2, R1DEMOVATE6_Rekr3) %>%
+  filter(!is.na(R1DEMOVATE6_Rekr1) & !is.na(R1DEMOVATE6_Rekr2) & !is.na(R1DEMOVATE6_Rekr3)) %>%
+  filter(R1DEMOVATE6_Rekr1 != 999, R1DEMOVATE6_Rekr2 != 999, R1DEMOVATE6_Rekr3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Rekr1, R2 = R1DEMOVATE6_Rekr2, R3 = R1DEMOVATE6_Rekr3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_rekruttering = value)
+
+# Sak:
+sak <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Sak1, R1DEMOVATE6_Sak2, R1DEMOVATE6_Sak3) %>%
+  filter(!is.na(R1DEMOVATE6_Sak1) & !is.na(R1DEMOVATE6_Sak2) & !is.na(R1DEMOVATE6_Sak3)) %>%
+  filter(R1DEMOVATE6_Sak1 != 999, R1DEMOVATE6_Sak2 != 999, R1DEMOVATE6_Sak3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Sak1, R2 = R1DEMOVATE6_Sak2, R3 = R1DEMOVATE6_Sak3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_sak = value)
+
+# Grunnlag:
+grunnlag <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Grunnlag1, R1DEMOVATE6_Grunnlag2, R1DEMOVATE6_Grunnlag3) %>%
+  filter(!is.na(R1DEMOVATE6_Grunnlag1) & !is.na(R1DEMOVATE6_Grunnlag2) & !is.na(R1DEMOVATE6_Grunnlag3)) %>%
+  filter(R1DEMOVATE6_Grunnlag1 != 999, R1DEMOVATE6_Grunnlag2 != 999, R1DEMOVATE6_Grunnlag3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Grunnlag1, R2 = R1DEMOVATE6_Grunnlag2, R3 = R1DEMOVATE6_Grunnlag3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_grunnlag = value)
+
+# Offentliggjøring:
+offentlig <- d_factored %>% 
+  select(IntervjuID, R1DEMOVATE6_Offentlig1, R1DEMOVATE6_Offentlig2, R1DEMOVATE6_Offentlig3) %>%
+  filter(!is.na(R1DEMOVATE6_Offentlig1) & !is.na(R1DEMOVATE6_Offentlig2) & !is.na(R1DEMOVATE6_Offentlig3)) %>%
+  filter(R1DEMOVATE6_Offentlig1 != 999, R1DEMOVATE6_Offentlig2 != 999, R1DEMOVATE6_Offentlig3 != 999) %>%
+  rename(R1 = R1DEMOVATE6_Offentlig1, R2 = R1DEMOVATE6_Offentlig2, R3 = R1DEMOVATE6_Offentlig3) %>%
+  reshape2::melt(id.vars='IntervjuID') %>%
+  rename(Runde = variable, R1DEMOVATE6_offentlig = value)
+
+d1 <- left_join(dv, antall,         by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, dag,            by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, komp,           by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, rekruttering,   by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, sak,            by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, grunnlag,       by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+d1 <- left_join(d1, offentlig,      by = c("IntervjuID" = "IntervjuID", "Runde" = "Runde"))
+
+
+# Process attributes:
+d1 <- d1 %>%
+  mutate(# Antall:
+         #R1DEMOVATE6_antall = str_replace(R1DEMOVATE6_antall, "12", "12 p"),
+         #R1DEMOVATE6_antall = str_replace(R1DEMOVATE6_antall, "300", "300 p"),
+         #R1DEMOVATE6_antall = str_replace(R1DEMOVATE6_antall, "1000", "1000 p"),
+         
+         # Dag:
+         R1DEMOVATE6_dag = str_replace(R1DEMOVATE6_dag, "hverdag", "Hverdag"),
+         R1DEMOVATE6_dag = str_replace(R1DEMOVATE6_dag, "helgedag", "Helgedag"),
+         
+         # Kompensasjon:
+         R1DEMOVATE6_komp = str_replace(R1DEMOVATE6_komp, "kompensert med 1000 kroner per time", "1000 kr/t"),
+         R1DEMOVATE6_komp = str_replace(R1DEMOVATE6_komp, "kompensert med 500 kroner per time", "500 kr/t"),
+         R1DEMOVATE6_komp = str_replace(R1DEMOVATE6_komp, "kompensert med 200 kroner per time", "200 kr/t"),
+         R1DEMOVATE6_komp = str_replace(R1DEMOVATE6_komp, "ikke kompensert", "Ingen komp."),
+         
+         # Rekruttering:
+         R1DEMOVATE6_rekruttering = str_replace(R1DEMOVATE6_rekruttering, "Deltakerne trekkes tilfeldig blant alle innbyggerne i kommunen", "Tilfeldig utvalg"),
+         R1DEMOVATE6_rekruttering = str_replace(R1DEMOVATE6_rekruttering, "Registrering er åpen for alle innbyggerne i kommunen til det er fullt", "Åpen påmelding"),
+         
+         # Sak:
+         R1DEMOVATE6_sak = str_replace(R1DEMOVATE6_sak, "tiggerforbud i Bergen", "Tiggeforbud"),
+         R1DEMOVATE6_sak = str_replace(R1DEMOVATE6_sak, "boligbygging på Store Lungegårdsvann", "Boligbygging"),
+         R1DEMOVATE6_sak = str_replace(R1DEMOVATE6_sak, "turistskatt", "Turistskatt"),
+         
+         # Beslutningsgrunnlag:
+         R1DEMOVATE6_grunnlag = str_replace(R1DEMOVATE6_grunnlag, "meningsutveksling i mindre grupper, ledet av uavhengige moderatorer", "Moderatorstyrt"),
+         R1DEMOVATE6_grunnlag = str_replace(R1DEMOVATE6_grunnlag, "troverdig informasjon fra uavhengige eksperter", "Troverdig info fra uavh. Eksperter"),
+         R1DEMOVATE6_grunnlag = str_replace(R1DEMOVATE6_grunnlag, "egne vurderinger og preferanser", "Egne vurderinger og preferanser"),
+         
+         # Offentliggjøring:
+         R1DEMOVATE6_offentlig = str_replace(R1DEMOVATE6_offentlig, "Hvem som deltok i borgerpanelet og hvordan de stemte vil ikke være offentlig", "Stemmegivning offentliggjort"),
+         R1DEMOVATE6_offentlig = str_replace(R1DEMOVATE6_offentlig, "Hvem som deltok i borgerpanelet og hvordan de stemte vil være offentlig", "Stemmegivning ikke offentlig"))
+
+d1 <- d1 %>% mutate(R1DEMOVATE6_antall = as.factor(R1DEMOVATE6_antall),
+              R1DEMOVATE6_dag = as.factor(R1DEMOVATE6_dag),
+              R1DEMOVATE6_komp = as.factor(R1DEMOVATE6_komp), 
+              R1DEMOVATE6_rekruttering = as.factor(R1DEMOVATE6_rekruttering),
+              R1DEMOVATE6_sak = as.factor(R1DEMOVATE6_sak),
+              R1DEMOVATE6_grunnlag = as.factor(R1DEMOVATE6_grunnlag),
+              R1DEMOVATE6_offentlig = as.factor(R1DEMOVATE6_offentlig))
+              
+
+# My model:
+# Skal jeg endre på x-aksen?
+p1 <- R1DEMOVATE6_dv ~ R1DEMOVATE6_antall + R1DEMOVATE6_dag + R1DEMOVATE6_komp + R1DEMOVATE6_rekruttering + R1DEMOVATE6_sak + R1DEMOVATE6_grunnlag + R1DEMOVATE6_offentlig
+plot(mm(d1, p1, id = ~ IntervjuID), vline = 37.54005)
+
+#mmm <- mm(d1, p1, id = ~ IntervjuID)
+#mean(mmm$estimate)
+```
+
+
+```{r AMCES, echo = FALSE, warning = FALSE, message = FALSE}
+# estimation
+amces <- cj(d1, p1, id = ~ IntervjuID)
+#head(amces[c("feature", "level", "estimate", "std.error")], 20L)
+plot(amces)
+
+
+# Delete:
+rm(dv, antall, dag, komp, rekruttering, sak, grunnlag, offentlig)
+```
+
+
+
+
+
+```{r}
+amces <- cj(taxes, chose_plan ~ taxrate1 + taxrate2 + taxrate3 + taxrate4 + taxrate5 + taxrate6 + taxrev, id = ~ID)
+head(amces[c("feature", "level", "estimate", "std.error")], 20L)
+
+# Create model:
+data("immigration")
+immigration %>% glimpse()
+f1 <- ChosenImmigrant ~ Gender + Education + LanguageSkills + CountryOfOrigin + Job + JobExperience + JobPlans + ReasonForApplication + PriorEntry
+plot(mm(immigration, f1, id = ~CaseID), vline = 0.5)
+
+??mm
+
+```
+
