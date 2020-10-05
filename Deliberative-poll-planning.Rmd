@@ -1,0 +1,21 @@
+---
+title: "Untitled"
+author: "Sveinung Arnesen"
+date: "10/2/2020"
+output: html_document
+---
+
+Solomon four group design:
+
+Group 1. Survey 1, no deliberation, Survey 2  
+Group 2. Survey 1, deliberation, Survey 2  
+Group 3.          , no deliberation, Survey 2  
+Group 4.          , deliberation, Survey 2  
+
+Group 1 receives a letter of invitation to do an online survey, with a follow-up survey which should be answered on the day the Deliberative Polling takes place.
+
+Group 2 receives a letter of invitation to do an online survey, and then participate in the deliberative poll.
+
+Group 3 receives a letter of invitation to do an online survey on the day of the deliberative polling. The letter is sent out at the same time as the other invitation letters.
+
+Group 4 receives a letter of invitation to participate in a deliberative poll.
