@@ -1,0 +1,103 @@
+---
+title: "Deliberative Polling in Bergen, Norway"
+subtitle: "Preliminary time schedule, 2020-2021"
+author: ""
+date: "10/8/2020"
+output: html_document
+---
+```{r dp-setup, include=FALSE}
+if(!require("haven")){install.packages("haven");  library(haven)}
+if(!require("knitr")){install.packages("knitr");  library(knitr)}
+if(!require("readxl")){install.packages("readxl");  library(readxl)}
+if(!require("tidyverse")){install.packages("tidyverse");  library(tidyverse)}
+
+d <- read_excel("C:\\Users/svein/Documents/borgerpanel/Data/DeliberativePoll-planning.xlsx")
+
+knitr::opts_chunk$set(echo = FALSE, knitr.kable.NA = "", warning = FALSE, message = FALSE)
+```
+
+```{r dp-milestones, fig.width=9, fig.height=2}
+
+#Gantt
+gantt <- d %>% 
+  filter(!is.na(Start_date)) %>% 
+  pivot_longer(., Start_date:End_date, names_to = "period") %>% 
+  mutate(value = as.Date(value, "%Y.%m.%d"),
+         Action = as_factor(Action))  
+
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+plot1 <- 
+  ggplot(gantt, aes(x=value, y=fct_reorder(Type, desc(Item)), group=Item))+
+    geom_line(size = 3) +
+  labs(x="Year", y=NULL, title="Deliberativ meningsmåling", subtitle = "Type aktivitet") + 
+  scale_colour_manual(values=cbbPalette) +
+  labs(color = "Type") +
+     theme_light() +
+  theme(axis.line.y=element_blank(),
+                  axis.title.x=element_blank(),
+                 axis.title.y=element_blank(),
+                 axis.ticks.y=element_blank(),
+                                  axis.line.x =element_blank(),
+                 legend.position = "bottom"
+                ) 
+plot1
+
+```
+
+Det går litt på engelsk og norsk om hverandre her, siden Fishkin og co. også er involvert i denne planleggingen.
+
+Figuren over viser hvordan vi jobber med de ulike delene av den deliberative meningsmålingen.
+*Stanford Online Deliberative Platform* er nettløsningen vi skal bruke.
+Her er jeg i dialog med kollegaene våre på Stanford om opplæring og tilpasning til norske forhold.
+
+*Questionnaire development* viser til arbeidet med å komme fram til saker, lage spørsmål, og programmere undersøkelsen.
+
+*Fieldwork preparations* er aktivitetene knyttet til den praktiske gjennomføringen av den deliberative meningsmålingen.
+
+Oppgaver som knyttes til rekruttering av respondenter går under kategorien *Recruitment.*
+
+*Fieldwork* viser til periodene hvor vi aktivt samler inn data.
+
+*Post processing* er en samlekategori for alt som skjer i etterkant av den deliberative meningsmålingen.
+
+Figuren og tabellen under viser en mer detaljer oversikt over oppgavene.
+
+Det vi tenker at det er viktig at kommunen er involvert i er 
+
+  1. Valg av saker. Her er vi godt i gang, og vi må være klar med det tidlig januar 2021.  
+  2. Praktisk organisering av deliberativ meningsmåling. Utsendelse av invitasjon, og tilstedeværelse  med nødvendig personell under gjennomføringen. Gjerne nå ut til nettverk av andre kommuner som kan være interessert i å være observatører.
+
+Når det gjelder høsten 2021, så er mye usikkert pga koronasituasjonen. Vi kan likevel ta en runde om aktuelle datoer som kan passe å holde borgerpaneler.   
+
+
+```{r dp-gantt, fig.width=9, fig.height=5}
+
+#Gantt
+gantt <- d %>% 
+  filter(!is.na(Start_date)) %>% 
+  pivot_longer(., Start_date:End_date, names_to = "period") %>% 
+  mutate(value = as.Date(value, "%Y.%m.%d"),
+         Action = as_factor(Action))  
+
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+plot1 <- 
+  ggplot(gantt, aes(x=value, y=fct_reorder(Action, desc(Item)), group=Item, color=as_factor(Type)))+
+    geom_line(size = 3) +
+  labs(x="Year", y=NULL, title="Deliberativ meningsmåling", subtitle = "2020-2021") + 
+  scale_colour_manual(values=cbbPalette) +
+  labs(color = "Type") +
+     theme_light() +
+  theme(axis.line.y=element_blank(),
+                  axis.title.x=element_blank(),
+                 axis.title.y=element_blank(),
+                 axis.ticks.y=element_blank(),
+                                  axis.line.x =element_blank(),
+                 legend.position = "bottom"
+                ) 
+plot1
+
+d %>% select(Start_date, End_date, Action) %>% filter(!is.na(Start_date)) %>% kable()
+
+```
