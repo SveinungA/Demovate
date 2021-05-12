@@ -20,6 +20,7 @@ if(!require(expss)) { install.packages("expss"); require(expss)}
 if(!require(gganimate)) { install.packages("gganimate"); require(gganimate)}
 if(!require(gt)) { install.packages("gt"); require(gt)}
 if(!require(haven)) { install.packages("haven"); require(haven)}
+if(!require(here)) { install.packages("here"); require(here)}
 if(!require(knitr)) { install.packages("knitr"); require(knitr)}
 if(!require(naniar)) { install.packages("naniar"); require(naniar)}
 if(!require(paletteer)) { install.packages("paletteer"); require(paletteer)}
@@ -130,11 +131,11 @@ main <- main %>% mutate(DEMOVATE6_Antall = case_when(DEMOVATE6_Antall == 1 ~ '12
                         DEMOVATE6_Dag = case_when(DEMOVATE6_Dag == 1 ~ 'Hverdag',
                                                   DEMOVATE6_Dag == 2 ~ 'Helgedag'),
                         DEMOVATE6_Rekr = case_when(DEMOVATE6_Rekr == 1 ~ 'Selvseleksjon',
-                                                   DEMOVATE6_Rekr == 2 ~ 'Invitasjon, \n tilfeldig uttrekk'),
+                                                   DEMOVATE6_Rekr == 2 ~ 'Invitasjon ved tilfeldig uttrekk'),
                         DEMOVATE6_Komp = case_when(DEMOVATE6_Komp== 1 ~ 'Ingen',
-                                                   DEMOVATE6_Komp == 2 ~ 'Kr. 200/timen',
-                                                   DEMOVATE6_Komp == 3 ~ 'Kr. 500/timen',
-                                                   DEMOVATE6_Komp == 4 ~ 'Kr. 1000/timen'),
+                                                   DEMOVATE6_Komp == 2 ~ 'Kr 200/time',
+                                                   DEMOVATE6_Komp == 3 ~ 'Kr 500/time',
+                                                   DEMOVATE6_Komp == 4 ~ 'Kr 1000/time'),
                         DEMOVATE6_Komp = lvls_reorder(DEMOVATE6_Komp, c(1, 3, 4, 2)),
                         DEMOVATE6_Sak = case_when(DEMOVATE6_Sak == 1 ~ 'Store Lungegårdsvann',
                                                   DEMOVATE6_Sak == 2 ~ 'Tiggerforbud',
@@ -177,11 +178,18 @@ fig_amce <-
     breaks = round(seq(-40, 40, 5), 5),
     expand = c(0, 0)) +
     labs(
-    x = "Sannsynlighet for deltakelse",
+    x = "Sannsynlighet for deltakelse \n Endring i prosentpoeng",
     y = "") +
   theme_bw() +
-  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=6, angle=0) ,      axis.text.x=element_text(size=rel(0.7)))
+  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=9, angle=0) ,      axis.text.x=element_text(size=rel(0.9)))
 fig_amce
+
+ggsave(
+  here("output", "figs", "pngs", 'lokaldemokrati-deltakelse.png'),
+  plot = fig_amce,
+  width = 7, height = 5, dpi = 300
+)
+
 ```
 
 Resultatene fra eksperimentet viser at respondentene blir mer positive til å delta hvis de får en økonomisk kompensasjon.
@@ -246,11 +254,11 @@ main <- main %>% mutate(DEMOVATE7_Antall = case_when(DEMOVATE7_Antall == 1 ~ '12
                         DEMOVATE7_Dag = case_when(DEMOVATE7_Dag == 1 ~ 'Hverdag',
                                                   DEMOVATE7_Dag == 2 ~ 'Helgedag'),
                         DEMOVATE7_Rekr = case_when(DEMOVATE7_Rekr == 1 ~ 'Selvseleksjon',
-                                                   DEMOVATE7_Rekr == 2 ~ 'Invitasjon, \n tilfeldig uttrekk'),
+                                                   DEMOVATE7_Rekr == 2 ~ 'Invitasjon ved tilfeldig uttrekk'),
                         DEMOVATE7_Komp = case_when(DEMOVATE7_Komp== 1 ~ 'Ingen',
-                                                   DEMOVATE7_Komp == 2 ~ 'Kr. 200/timen',
-                                                   DEMOVATE7_Komp == 3 ~ 'Kr. 500/timen',
-                                                   DEMOVATE7_Komp == 4 ~ 'Kr. 1000/timen'),
+                                                   DEMOVATE7_Komp == 2 ~ 'Kr 200/time',
+                                                   DEMOVATE7_Komp == 3 ~ 'Kr 500/time',
+                                                   DEMOVATE7_Komp == 4 ~ 'Kr 1000/time'),
                         DEMOVATE7_Komp = lvls_reorder(DEMOVATE7_Komp, c(1, 3, 4, 2)),
                         DEMOVATE7_Sak = case_when(DEMOVATE7_Sak == 1 ~ 'Store Lungegårdsvann',
                                                   DEMOVATE7_Sak == 2 ~ 'Tiggerforbud',
@@ -293,11 +301,18 @@ fig_amce <-
     breaks = round(seq(-1.5, 1.5, 0.2), 2),
     expand = c(0, 0)) +
     labs(
-    x = "Legitimitet",
+    x = "Endring i vektlegging \n ",
     y = "") +
   theme_bw() +
-  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=6, angle=0) ,      axis.text.x=element_text(size=rel(0.7)))
+  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=9, angle=0) ,      axis.text.x=element_text(size=rel(0.9)))
 fig_amce
+
+ggsave(
+  here("output", "figs", "pngs", 'lokaldemokrati-figur2.png'),
+  plot = fig_amce,
+  width = 7, height = 5, dpi = 300
+)
+
 ```
 
 Eksperimentet viser at respondentene er klart mer villig til å vektlegge et borgerpanel med et tresifret antall deltakere enn hvis det bare er 12 stykker.
@@ -365,11 +380,11 @@ main <- d2 %>% mutate(r18padprolegran1 = case_when(r18padprolegran1 == 1 ~ '12',
                                                      r18padprolegran3 == 3 ~ 'to dager'),
                       r18padprolegran3 = lvls_reorder(r18padprolegran3, c(2, 1, 3)),
                         r18padprolegran5 = case_when(r18padprolegran5 == 1 ~ 'Selvseleksjon',
-                                                   r18padprolegran5 == 2 ~ 'Invitasjon, \n tilfeldig uttrekk'),
+                                                   r18padprolegran5 == 2 ~ 'Invitasjon ved tilfeldig uttrekk'),
                         r18padprolegran4 = case_when(r18padprolegran4 == 1 ~ 'Ingen',
-                                                   r18padprolegran4 == 2 ~ 'Kr. 200/timen',
-                                                   r18padprolegran4 == 3 ~ 'Kr. 500/timen',
-                                                   r18padprolegran4 == 4 ~ 'Kr. 1000/timen'),
+                                                   r18padprolegran4 == 2 ~ 'Kr 200/time',
+                                                   r18padprolegran4 == 3 ~ 'Kr 500/time',
+                                                   r18padprolegran4 == 4 ~ 'Kr 1000/time'),
                       r18padprolegran4 = lvls_reorder(r18padprolegran4, c(1, 3, 4, 2)),
                        r18padprolegran6 = case_when(r18padprolegran6 == 1 ~ 'Egne vurderinger og preferanser',
                                                        r18padprolegran6 == 2 ~ 'Informasjon fra uavhengige eksperter',
@@ -409,11 +424,18 @@ fig_amce <-
     breaks = round(seq(-3, 3, 0.2), 0.2),
     expand = c(0, 0)) +
     labs(
-    x = "Sannsynlighet for deltakelse",
+    x = "Sannsynlighet for deltakelse \n Endring på skala fra 0 til 10",
     y = "") +
   theme_bw() +
-  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=6, angle=0) ,      axis.text.x=element_text(size=rel(0.7)))
+  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=9, angle=0) ,      axis.text.x=element_text(size=rel(0.9)))
 fig_amce
+
+ggsave(
+  here("output", "figs", "pngs", 'lokaldemokrati-deltakelse-mbp.png'),
+  plot = fig_amce,
+  width = 7, height = 5, dpi = 300
+)
+
 ```
 
 ## Legitimitet
@@ -455,11 +477,17 @@ fig_amce <-
     breaks = round(seq(-1.5, 1.5, 0.2), 2),
     expand = c(0, 0)) +
     labs(
-    x = "Legitimitet",
+    x = "Endring i vektlegging",
     y = "") +
   theme_bw() +
-  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=6, angle=0) ,      axis.text.x=element_text(size=rel(0.7)))
+  theme(plot.margin = unit(c(2, 2, 2, 2), "mm"),  plot.title = element_text(size=9), plot.subtitle = element_text(size=8), strip.text.y = element_text(size=9, angle=0) ,      axis.text.x=element_text(size=rel(0.9)))
 fig_amce
+
+ggsave(
+  here("output", "figs", "pngs", 'lokaldemokrati-figur3.png'),
+  plot = fig_amce,
+  width = 7, height = 5
+)
 ```
 
 ## Kodebok

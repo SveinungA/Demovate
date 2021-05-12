@@ -79,152 +79,152 @@ plot1
 #plot2
 ```
 
-<!-- # Applied costs grouped by activity -->
+# Applied costs grouped by activity
 
-<!-- ```{r costs_wp} -->
-<!-- options(knitr.kable.NA = " ") -->
+```{r costs_wp}
+options(knitr.kable.NA = " ")
 
-<!-- table <- demovate %>% -->
-<!--   group_by(WP)%>% -->
-<!--   summarise(sum(Applied_costs, na.rm=TRUE), -->
-<!--             (sum(Project_costs, na.rm=TRUE))) -->
-<!-- kable(table, format = "html", booktabs = TRUE, caption = "Total and applied costs, by work package", col.names = linebreak(c("WP", "Applied costs", "Total costs"))) %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))  -->
+table <- demovate %>%
+  group_by(WP)%>%
+  summarise(sum(Applied_costs, na.rm=TRUE),
+            (sum(Project_costs, na.rm=TRUE)))
+kable(table, format = "html", booktabs = TRUE, caption = "Total and applied costs, by work package", col.names = linebreak(c("WP", "Applied costs", "Total costs"))) %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
-<!-- ``` -->
+```
 
-<!-- # Total project costs by budget category -->
-<!-- ```{r costs_rcn_cat} -->
-<!-- options(knitr.kable.NA = " ") -->
+# Total project costs by budget category
+```{r costs_rcn_cat}
+options(knitr.kable.NA = " ")
 
-<!-- table <- demovate %>% -->
-<!--   group_by(RCN_cat)%>% -->
-<!--   summarise(sum(Applied_costs, na.rm=TRUE), -->
-<!--             (sum(Project_costs, na.rm=TRUE))) -->
-<!-- kable(table, format = "html", booktabs = TRUE, caption = "Total and applied costs, by budget category", col.names = linebreak(c("Budget category", "Applied costs", "Total costs"))) %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive")) %>%  -->
-<!--   row_spec(4, bold = T) -->
+table <- demovate %>%
+  group_by(RCN_cat)%>%
+  summarise(sum(Applied_costs, na.rm=TRUE),
+            (sum(Project_costs, na.rm=TRUE)))
+kable(table, format = "html", booktabs = TRUE, caption = "Total and applied costs, by budget category", col.names = linebreak(c("Budget category", "Applied costs", "Total costs"))) %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive")) %>%
+  row_spec(4, bold = T)
 
-<!-- ``` -->
+```
 
-<!-- # Person-months by researcher category -->
-<!-- ```{r person_months} -->
-<!-- options(knitr.kable.NA = " ") -->
+# Person-months by researcher category
+```{r person_months}
+options(knitr.kable.NA = " ")
 
-<!-- table <- demovate %>%  -->
-<!--   group_by(Researcher) %>%  -->
-<!--   filter(!is.na(Researcher)) %>%  -->
-<!--   summarise(n = n()) -->
+table <- demovate %>%
+  group_by(Researcher) %>%
+  filter(!is.na(Researcher)) %>%
+  summarise(n = n())
 
-<!-- kable(table, format = "html", booktabs = TRUE, col.names = linebreak(c("Researcher", "Person-Months"))) %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))  -->
+kable(table, format = "html", booktabs = TRUE, col.names = linebreak(c("Researcher", "Person-Months"))) %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
-<!-- ``` -->
+```
 
-<!-- # Person-months by year and research category  -->
-<!-- ```{r person_months_year_rcn} -->
-<!-- options(knitr.kable.NA = " ") -->
+# Person-months by year and research category
+```{r person_months_year_rcn}
+options(knitr.kable.NA = " ")
 
-<!-- table <- demovate %>%  -->
-<!--   group_by(Year, Researcher) %>%  -->
-<!--   filter(!is.na(Researcher)) %>%  -->
-<!--   summarise(months = n()) -->
+table <- demovate %>%
+  group_by(Year, Researcher) %>%
+  filter(!is.na(Researcher)) %>%
+  summarise(months = n())
 
-<!-- kable(table, format = "html", booktabs = TRUE, col.names = linebreak(c("Year", "Researcher", "Person-Months"))) %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))  -->
+kable(table, format = "html", booktabs = TRUE, col.names = linebreak(c("Year", "Researcher", "Person-Months"))) %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
-<!-- ``` -->
+```
 
-<!-- # Person-months by year -->
-<!-- ```{r person_months_year} -->
-<!-- options(knitr.kable.NA = " ") -->
+# Person-months by year
+```{r person_months_year}
+options(knitr.kable.NA = " ")
 
-<!-- table <- demovate %>%  -->
-<!--   group_by(Year) %>%  -->
-<!--   filter(!is.na(Researcher)) %>%  -->
-<!--   summarise(n = n()) -->
+table <- demovate %>%
+  group_by(Year) %>%
+  filter(!is.na(Researcher)) %>%
+  summarise(n = n())
 
-<!-- kable(table, format = "html", booktabs = TRUE, col.names = linebreak(c("Year", "Person-Months"))) %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))  -->
+kable(table, format = "html", booktabs = TRUE, col.names = linebreak(c("Year", "Person-Months"))) %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
-<!-- ``` -->
+```
 
-<!-- # Person-months by work package -->
-<!-- ```{r person_months_wp} -->
-<!-- options(knitr.kable.NA = " ") -->
+# Person-months by work package
+```{r person_months_wp}
+options(knitr.kable.NA = " ")
 
-<!-- df <- demovate %>%  -->
-<!--   group_by(WP) %>%  -->
-<!--   filter(!is.na(Researcher)) %>%  -->
-<!--   summarise(n = n()) -->
+df <- demovate %>%
+  group_by(WP) %>%
+  filter(!is.na(Researcher)) %>%
+  summarise(n = n())
 
-<!-- kable(df, format = "html", booktabs = TRUE, col.names = linebreak(c("WP", "Person-Months"))) %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))  -->
+kable(df, format = "html", booktabs = TRUE, col.names = linebreak(c("WP", "Person-Months"))) %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
-<!-- ``` -->
+```
 
-<!-- # Cost per partner per year -->
-<!-- ```{r costs_partner} -->
-<!-- options(knitr.kable.NA = " ") -->
+# Cost per partner per year
+```{r costs_partner}
+options(knitr.kable.NA = " ")
 
-<!-- df <- demovate %>%  -->
-<!--   group_by(Institution, Year) %>%  -->
-<!--   filter(!is.na(Institution)) %>%  -->
-<!--   summarise(sum(Applied_costs, na.rm=TRUE), -->
-<!--             (sum(Project_costs, na.rm=TRUE))) -->
-<!-- kable(df, format = "html", booktabs = TRUE, caption = "Total and applied costs, by year and partner", col.names = linebreak(c("Category", "Year", "Applied costs", "Total costs")))  %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))  -->
+df <- demovate %>%
+  group_by(Institution, Year) %>%
+  filter(!is.na(Institution)) %>%
+  summarise(sum(Applied_costs, na.rm=TRUE),
+            (sum(Project_costs, na.rm=TRUE)))
+kable(df, format = "html", booktabs = TRUE, caption = "Total and applied costs, by year and partner", col.names = linebreak(c("Category", "Year", "Applied costs", "Total costs")))  %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
-<!-- ``` -->
+```
 
-<!-- # Cost plan -->
-<!-- ```{r cost_plan} -->
-<!-- options(knitr.kable.NA = " ") -->
+# Cost plan
+```{r cost_plan}
+options(knitr.kable.NA = " ")
 
-<!-- df <- demovate %>%  -->
-<!--   group_by(RCN_cat, Year) %>%  -->
-<!--   filter(!is.na(Institution)) %>%  -->
-<!--   summarise(sum(Applied_costs, na.rm=TRUE), -->
-<!--             (sum(Project_costs, na.rm=TRUE))) -->
-<!-- kable(df, format = "html", booktabs = TRUE, caption = "Total and applied costs, by year and category", col.names = linebreak(c("Category", "Year", "Applied costs", "Total costs")))  %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))  -->
-<!-- ``` -->
+df <- demovate %>%
+  group_by(RCN_cat, Year) %>%
+  filter(!is.na(Institution)) %>%
+  summarise(sum(Applied_costs, na.rm=TRUE),
+            (sum(Project_costs, na.rm=TRUE)))
+kable(df, format = "html", booktabs = TRUE, caption = "Total and applied costs, by year and category", col.names = linebreak(c("Category", "Year", "Applied costs", "Total costs")))  %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+```
 
-<!-- # Allocations sought from the Research Council  -->
-<!-- ```{r allocations} -->
-<!-- options(knitr.kable.NA = " ") -->
+# Allocations sought from the Research Council
+```{r allocations}
+options(knitr.kable.NA = " ")
 
-<!-- df <- demovate %>%  -->
-<!--   group_by(Researcher, Year) %>%  -->
-<!--   filter(!is.na(Institution)) %>%  -->
-<!--   summarise(sum(Applied_costs, na.rm=TRUE), -->
-<!--             (sum(Project_costs, na.rm=TRUE))) -->
-<!-- kable(df, format = "html", booktabs = TRUE, caption = "Total and applied costs, by year and researcher", col.names = linebreak(c("Researcher", "Year", "Applied costs", "Total costs")))  %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))  -->
+df <- demovate %>%
+  group_by(Researcher, Year) %>%
+  filter(!is.na(Institution)) %>%
+  summarise(sum(Applied_costs, na.rm=TRUE),
+            (sum(Project_costs, na.rm=TRUE)))
+kable(df, format = "html", booktabs = TRUE, caption = "Total and applied costs, by year and researcher", col.names = linebreak(c("Researcher", "Year", "Applied costs", "Total costs")))  %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
 
-<!-- ``` -->
+```
 
-<!-- # Total project costs by year -->
-<!-- ```{r costs_year} -->
-<!-- options(knitr.table.NA = "") -->
+# Total project costs by year
+```{r costs_year}
+options(knitr.table.NA = "")
 
-<!-- table <- demovate %>% -->
-<!--   group_by(Year)%>% -->
-<!--   summarise(sum(Applied_costs, na.rm=TRUE), -->
-<!--             (sum(Project_costs, na.rm=TRUE))) -->
-<!-- kable(table, format = "html", booktabs = TRUE, caption = "Total and applied costs, by year", col.names = linebreak(c("Year", "Applied costs", "Total costs"))) %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))  -->
+table <- demovate %>%
+  group_by(Year)%>%
+  summarise(sum(Applied_costs, na.rm=TRUE),
+            (sum(Project_costs, na.rm=TRUE)))
+kable(table, format = "html", booktabs = TRUE, caption = "Total and applied costs, by year", col.names = linebreak(c("Year", "Applied costs", "Total costs"))) %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
 
-<!-- ``` -->
+```
 
-<!-- # Full data set -->
-<!-- ```{r dataset} -->
-<!-- options(knitr.kable.NA = " ") -->
+# Full data set
+```{r dataset}
+options(knitr.kable.NA = " ")
 
-<!-- table <- demovate %>%   -->
-<!--   arrange(Year, Month) -->
-<!--   kable(table, format = "html", booktabs = TRUE, caption = "Total and applied costs, by budget category") %>%  -->
-<!--   kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"), font_size = 15)  -->
+table <- demovate %>%
+  arrange(Year, Month)
+  kable(table, format = "html", booktabs = TRUE, caption = "Total and applied costs, by budget category") %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "hover", "responsive"), font_size = 15)
 
-<!-- ``` -->
+```
